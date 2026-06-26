@@ -1,0 +1,32 @@
+{
+  "name": "pickup-pro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "preview": "npm run pages:build && wrangler pages dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "@supabase/supabase-js": "^2.108.1",
+    "mapbox-gl": "^3.24.1",
+    "next": "^15.5.19",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-easy-crop": "^6.0.2"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.16",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.19",
+    "tailwindcss": "^4",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.105.0"
+  }
+}

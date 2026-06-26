@@ -1,0 +1,411 @@
+@import "tailwindcss";
+
+/* ============================================================
+   PickupPro — Design System (Tailwind v4)
+   bg #0D1117 · cards #0A0A0A · line #1f2937
+   accent #16a34a (green) · orange #f97316 (official only)
+   text #f0f6ff · muted #8b949e
+   headings: Space Grotesk · details: DM Mono
+   ============================================================ */
+
+@theme {
+  --color-bg: #0d1117;
+  --color-card: #0a0a0a;
+  --color-line: #1f2937;
+  --color-accent: #16a34a;
+  --color-accent-strong: #15803d;
+  --color-orange: #f97316;
+  --color-fg: #f0f6ff;
+  --color-muted: #8b949e;
+
+  --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-heading);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: rgba(22, 163, 74, 0.3);
+    color: #fff;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0d1117;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1f2937;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2d3a4f;
+  }
+}
+
+@layer components {
+  /* ---------- cards ---------- */
+  .card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-hover:hover {
+    border-color: rgba(22, 163, 74, 0.3);
+    box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.15),
+      0 0 28px -6px rgba(22, 163, 74, 0.25);
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1;
+    border-radius: 0.625rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background-color: var(--color-accent);
+    color: #ffffff;
+    border-color: var(--color-accent);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-accent-strong);
+    border-color: var(--color-accent-strong);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--color-accent);
+    border-color: rgba(22, 163, 74, 0.5);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background-color: rgba(22, 163, 74, 0.12);
+    border-color: var(--color-accent);
+  }
+  .btn-muted {
+    background: transparent;
+    color: var(--color-muted);
+    border-color: var(--color-line);
+  }
+  .btn-muted:hover:not(:disabled) {
+    color: var(--color-fg);
+    border-color: #374151;
+  }
+  .btn-danger {
+    background: transparent;
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+  }
+  /* Solid red — destructive confirm actions (e.g. admin post deletion). */
+  .btn-danger-solid {
+    background-color: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+  }
+  .btn-danger-solid:hover:not(:disabled) {
+    background-color: #dc2626;
+    border-color: #dc2626;
+  }
+  /* Toast notification entrance. */
+  .toast-item {
+    animation: pop-in 0.18s ease;
+  }
+
+  /* ---------- filter pills ---------- */
+  .pill {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    padding: 0.42rem 0.9rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-muted);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .pill:hover {
+    color: var(--color-fg);
+    border-color: #374151;
+  }
+  .pill-active,
+  .pill-active:hover {
+    background-color: var(--color-accent);
+    color: #ffffff;
+    border-color: var(--color-accent);
+  }
+
+  /* ---------- badges (DM Mono) ---------- */
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    line-height: 1.2;
+  }
+  .badge-casual {
+    color: var(--color-accent);
+    background: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+  }
+  .badge-official {
+    color: var(--color-orange);
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+  }
+  .badge-sport {
+    color: var(--color-fg);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-line);
+  }
+  .mono {
+    font-family: var(--font-mono);
+  }
+
+  /* ---------- form fields ---------- */
+  .field-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-muted);
+    margin-bottom: 0.4rem;
+  }
+  .field-input,
+  .field-textarea,
+  .field-select {
+    width: 100%;
+    background-color: #0d1117;
+    border: 1px solid var(--color-line);
+    color: var(--color-fg);
+    border-radius: 0.625rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+    font-family: var(--font-heading);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field-input::placeholder,
+  .field-textarea::placeholder {
+    color: #566072;
+  }
+  .field-input:focus,
+  .field-textarea:focus,
+  .field-select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  }
+  .field-textarea {
+    resize: vertical;
+    min-height: 5rem;
+  }
+  .field-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%238b949e' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    padding-right: 2.2rem;
+  }
+  .field-select option {
+    background-color: #0d1117;
+    color: var(--color-fg);
+  }
+
+  /* ---------- progress bar ---------- */
+  .progress-track {
+    width: 100%;
+    height: 0.4rem;
+    background-color: #1f2937;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background-color: var(--color-accent);
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+  }
+  .progress-fill-full {
+    background-color: var(--color-orange);
+  }
+
+  /* ---------- live dot ---------- */
+  .live-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 9999px;
+    background-color: var(--color-accent);
+    position: relative;
+    flex: none;
+  }
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background-color: var(--color-accent);
+    animation: live-pulse 1.8s ease-out infinite;
+  }
+  @keyframes live-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(2.8);
+      opacity: 0;
+    }
+  }
+
+  /* ---------- outlined hero text ---------- */
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--color-fg);
+  }
+  @media (max-width: 640px) {
+    .text-outline {
+      -webkit-text-stroke: 1.2px var(--color-fg);
+    }
+  }
+
+  /* ---------- modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(3px);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fade-in 0.15s ease;
+  }
+  .modal-panel {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 30rem;
+    padding: 1.5rem;
+    animation: pop-in 0.15s ease;
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ---------- map pins ---------- */
+  .event-pin {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .event-pin:hover {
+    transform: scale(1.3);
+  }
+  .event-pin-casual {
+    background-color: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.22), 0 0 14px rgba(22, 163, 74, 0.55);
+  }
+  .event-pin-official {
+    background-color: #f97316;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.22),
+      0 0 14px rgba(249, 115, 22, 0.55);
+  }
+}
+
+/* ---------- Mapbox dark popup overrides ---------- */
+.mapboxgl-popup-content {
+  background-color: #0a0a0a !important;
+  border: 1px solid #1f2937;
+  border-radius: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  color: #f0f6ff;
+  font-family: var(--font-heading);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+}
+.mapboxgl-popup-close-button {
+  color: #8b949e;
+  font-size: 1.1rem;
+  padding: 0.1rem 0.45rem;
+  right: 2px;
+  top: 2px;
+}
+.mapboxgl-popup-close-button:hover {
+  color: #f0f6ff;
+  background: transparent;
+}
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: #0a0a0a;
+}
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+  border-top-color: #0a0a0a;
+}
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: #0a0a0a;
+}
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #0a0a0a;
+}
+.mapboxgl-ctrl-logo {
+  opacity: 0.35;
+}
+.mapboxgl-ctrl-bottom-right .mapboxgl-ctrl-attrib {
+  background: rgba(10, 10, 10, 0.6) !important;
+}
+.mapboxgl-ctrl-attrib a {
+  color: #8b949e !important;
+}

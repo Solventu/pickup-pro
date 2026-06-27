@@ -67,6 +67,9 @@ export default function MapView({ events = [], flyToRef, className = "" }) {
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: MAP.style,
+      // Flat (mercator) instead of the globe so the map fills the whole frame —
+      // no black "space" void around a sphere.
+      projection: "mercator",
       // Default to a world view; the markers effect fits bounds to real events.
       center: [10, 25],
       zoom: 1.3,
@@ -76,6 +79,21 @@ export default function MapView({ events = [], flyToRef, className = "" }) {
       "top-right"
     );
     mapRef.current = map;
+
+    // Blend the base map into the warm navy theme: land takes the page bg, water
+    // a touch lighter — so the map reads as part of the site, not a grey box.
+    map.on("style.load", () => {
+      const set = (id, prop, val) => {
+        try {
+          if (map.getLayer(id)) map.setPaintProperty(id, prop, val);
+        } catch {}
+      };
+      (map.getStyle().layers || []).forEach((l) => {
+        if (l.type === "background") set(l.id, "background-color", "#1a1b26");
+        else if (l.type === "fill" && /water|ocean|bathymetry/i.test(l.id))
+          set(l.id, "fill-color", "#262838");
+      });
+    });
 
     if (flyToRef) {
       flyToRef.current = (ev) => {

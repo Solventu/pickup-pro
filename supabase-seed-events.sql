@@ -8,6 +8,11 @@
 -- Safe to re-run: it first removes any previous seed rows.
 -- ============================================================
 
+-- The events.source column has a CHECK constraint that only allows a fixed set
+-- of values (e.g. 'admin'). Drop it so 'seed' is accepted. (It's only a text
+-- guard, not a data relationship — safe to remove.)
+alter table events drop constraint if exists events_source_check;
+
 -- Remove previously seeded rows so re-running doesn't create duplicates.
 delete from events where source = 'seed';
 

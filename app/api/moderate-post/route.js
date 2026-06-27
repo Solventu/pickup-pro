@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyUser } from "@/lib/supabaseServer";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 // Uses the Anthropic API. Never cached.
 export const dynamic = "force-dynamic";
@@ -69,6 +70,16 @@ export async function POST(req) {
   const { user } = await verifyUser(req);
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Throttle per IP so a logged-in user can't spam the endpoint and burn API
+  // credits. Over-quota requests block the post (allowed:false) rather than fail
+  // open, so the rate limit can't be used to slip past moderation.
+  if (!checkRateLimit("moderate-post", getClientIp(req), { max: 10, windowMs: 60_000 })) {
+    return Response.json(
+      { allowed: false, reason: "You're posting too fast. Please wait a moment." },
+      { status: 429 }
+    );
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {

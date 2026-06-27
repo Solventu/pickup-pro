@@ -160,11 +160,14 @@ drop policy if exists "users_see_own_notifications" on notifications;
 create policy "users_see_own_notifications" on notifications
   for select using (auth.uid() = user_id);
 
--- Anyone trusted (admin route / service role) can create a notification for a
--- user. (check(true) — the admin route is the only caller and is gated server-side.)
+-- Only the admin may create notifications (the post-removed message). The
+-- service-role client bypasses RLS entirely; this policy covers the fallback
+-- where the admin's own client inserts. Normal users can NOT spam notifications
+-- to others. (Previously check(true), which let any authenticated user insert.)
 drop policy if exists "service_can_insert" on notifications;
-create policy "service_can_insert" on notifications
-  for insert with check (true);
+drop policy if exists "admin_can_insert_notifications" on notifications;
+create policy "admin_can_insert_notifications" on notifications
+  for insert with check (auth.uid() = '2058520b-09cb-4311-999a-d97e971d22b1');
 
 -- You can mark your OWN notifications read (the bell flips is_read on open).
 drop policy if exists "users_update_own_notifications" on notifications;

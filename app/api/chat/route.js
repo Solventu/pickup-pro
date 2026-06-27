@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabaseClient";
 import { verifyUser } from "@/lib/supabaseServer";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 // Talks to the Anthropic API + Supabase. Never statically cached.
 export const dynamic = "force-dynamic";
@@ -82,43 +83,11 @@ function eventForModel(e) {
   };
 }
 
-// ---- Simple in-memory per-IP rate limiter (10 requests / 60s) ----
-// NOTE: in-memory state is per server instance and resets on redeploy. For
-// multi-instance production, back this with a shared store (e.g. Upstash/Redis).
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MSG = "Too many requests. Please try again in a minute.";
-const rateHits = new Map(); // ip -> { count, resetAt }
-
-function getClientIp(req) {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "unknown";
-}
-
-// True if the request is allowed; false if the IP is over its quota. The counter
-// resets 60s after the first request in a window.
-function checkRateLimit(ip) {
-  const now = Date.now();
-  // Opportunistically drop expired entries so the map can't grow unbounded.
-  if (rateHits.size > 5000) {
-    for (const [key, entry] of rateHits) {
-      if (now >= entry.resetAt) rateHits.delete(key);
-    }
-  }
-  const entry = rateHits.get(ip);
-  if (!entry || now >= entry.resetAt) {
-    rateHits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count += 1;
-  return true;
-}
 
 export async function POST(req) {
   // Rate limit before doing any work.
-  if (!checkRateLimit(getClientIp(req))) {
+  if (!checkRateLimit("chat", getClientIp(req), { max: 10, windowMs: 60_000 })) {
     return Response.json({ reply: RATE_LIMIT_MSG }, { status: 429 });
   }
 

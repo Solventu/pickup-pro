@@ -244,7 +244,7 @@ export default function HomePage() {
           />
 
           {/* Content */}
-          <div className="relative z-[2] flex min-h-[460px] flex-col justify-center px-6 py-12 sm:min-h-[540px] sm:px-12">
+          <div className="relative z-[2] flex min-h-[360px] flex-col justify-center px-6 py-8 sm:min-h-[540px] sm:px-12 sm:py-12">
             <motion.div
               variants={rise}
               className="mono mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent"

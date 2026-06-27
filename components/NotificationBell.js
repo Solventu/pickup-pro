@@ -101,12 +101,28 @@ export default function NotificationBell() {
     return () => clearInterval(t);
   }, [user?.id, load]);
 
+  // Keep the latest load() in a ref so the realtime effect below can call it
+  // without listing `load` as a dependency — otherwise the channel would tear
+  // down and re-subscribe whenever load changes.
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
   // Realtime: bump the badge the instant a system notification is inserted for
   // this user, without waiting for the 45s poll.
+  //
+  // The channel topic is made unique per subscription. supabase.channel() hands
+  // back an existing channel when one with the same topic is still registered;
+  // in React StrictMode (and on any re-subscribe) the cleanup's removeChannel is
+  // async, so a fixed topic could return a channel that has already subscribed —
+  // and adding `.on("postgres_changes")` to it then throws "cannot add callbacks
+  // after subscribe()". A unique topic guarantees a fresh channel every time.
   useEffect(() => {
     if (!user) return;
+    const topic = `notifications:${user.id}:${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`notifications:${user.id}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         {
@@ -115,13 +131,13 @@ export default function NotificationBell() {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        () => load()
+        () => loadRef.current()
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, load]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!open) return;

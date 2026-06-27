@@ -25,6 +25,16 @@ export const metadata = {
     "Discover pickup sports games, follow local athletes, and join the community in Timișoara.",
 };
 
+// maximumScale: 1 stops iOS Safari from auto-zooming when an input is focused
+// (paired with the 16px font-size rule in globals.css). Next.js renders this as
+// the <meta name="viewport"> tag — using the viewport export avoids the warning
+// Next emits when a viewport is placed in the metadata export instead.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmMono.variable}`}>

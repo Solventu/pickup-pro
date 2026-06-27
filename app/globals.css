@@ -367,6 +367,18 @@
   }
 }
 
+/* ---------- mobile input zoom fix ----------
+   iOS Safari auto-zooms when a focused input/textarea/select has a font-size
+   below 16px. Our .field-* classes use ~14px, so tapping any field zoomed the
+   page. Force 16px on every form control on small screens to stop the zoom. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* ---------- Mapbox dark popup overrides ---------- */
 .mapboxgl-popup-content {
   background-color: #0a0a0a !important;

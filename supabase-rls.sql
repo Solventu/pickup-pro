@@ -147,6 +147,14 @@ create table if not exists notifications (
 
 alter table notifications enable row level security;
 
+-- Per-user "last opened the bell" timestamp. The unread badge also counts
+-- follow-based notifications (follows table), which have no is_read column, so a
+-- single timestamp is what makes BOTH sources persist as read across devices and
+-- sessions. The bell sets this to now() on open (via profiles_update_own); the
+-- badge then counts only follows/notifications created after it. Replaces the old
+-- localStorage read-tracking that was per-device and re-appeared on every login.
+alter table profiles add column if not exists notifications_seen_at timestamptz;
+
 -- You can only read your own notifications.
 drop policy if exists "users_see_own_notifications" on notifications;
 create policy "users_see_own_notifications" on notifications

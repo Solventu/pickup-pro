@@ -9,31 +9,19 @@ import Avatar from "./Avatar";
 
 // The bell merges two notification sources:
 //   1) follows table  -> follow requests / new followers (with Accept/Decline).
-//      Read-state is tracked client-side (localStorage), keyed by follow-row id.
 //   2) notifications table -> system messages (e.g. admin removed your post).
-//      Read-state is the DB `is_read` column, so "seen" persists across reloads
-//      and devices (this is what fixes notifications re-appearing as unread).
 //
-// Opening the panel marks everything read: follows into localStorage, and system
-// rows via a single UPDATE ... SET is_read = true. The badge drops to 0 at once
-// (optimistic) and stays 0 on the next load because the DB now agrees.
-
-const seenKey = (uid) => `pickuppro_notif_seen_${uid}`;
-
-function readSeen(uid) {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(seenKey(uid)) || "[]"));
-  } catch {
-    return new Set();
-  }
-}
-function writeSeen(uid, set) {
-  try {
-    localStorage.setItem(seenKey(uid), JSON.stringify([...set]));
-  } catch {
-    /* ignore */
-  }
-}
+// Read-state is persisted entirely in the DATABASE so it holds across devices
+// and sessions:
+//   - profiles.notifications_seen_at — the moment the user last opened the bell.
+//     The unread badge counts only follows + system rows created AFTER it. This
+//     is what covers follow notifications, which have no is_read column.
+//   - notifications.is_read — flipped to true on open so individual system rows
+//     also read as seen anywhere they're queried.
+//
+// Opening the panel writes both (notifications_seen_at = now, is_read = true).
+// The badge drops to 0 at once (optimistic) and stays 0 on the next load — from
+// any device — because the DB now agrees. No localStorage is involved.
 
 function BellIcon() {
   return (
@@ -58,7 +46,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [follows, setFollows] = useState([]); // follow-based notifications
   const [system, setSystem] = useState([]); // notifications-table rows
-  const [seen, setSeen] = useState(() => new Set());
+  const [seenAt, setSeenAt] = useState(null); // profiles.notifications_seen_at
   const [busyId, setBusyId] = useState(null);
   const ref = useRef(null);
 
@@ -66,9 +54,10 @@ export default function NotificationBell() {
     if (!user) {
       setFollows([]);
       setSystem([]);
-      return [];
+      setSeenAt(null);
+      return { follows: [], system: [] };
     }
-    const [followsRes, notifRes] = await Promise.all([
+    const [followsRes, notifRes, profRes] = await Promise.all([
       supabase.from("follows").select("*").eq("following_id", user.id),
       supabase
         .from("notifications")
@@ -76,6 +65,14 @@ export default function NotificationBell() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50),
+      // notifications_seen_at may not exist until supabase-rls.sql is applied;
+      // on error data is null → seenAt stays null (everything reads as unread,
+      // which is safe) rather than crashing the bell.
+      supabase
+        .from("profiles")
+        .select("notifications_seen_at")
+        .eq("id", user.id)
+        .single(),
     ]);
 
     const list = followsRes.data || [];
@@ -90,14 +87,11 @@ export default function NotificationBell() {
     }
     const enriched = list.map((r) => ({ ...r, actor: pmap[r.follower_id] || null }));
     const sys = notifRes.data || []; // table may not exist yet → null → []
+    const seenVal = profRes.data?.notifications_seen_at || null;
     setFollows(enriched);
     setSystem(sys);
-    return { follows: enriched, system: sys };
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (user) setSeen(readSeen(user.id));
-    else setSeen(new Set());
+    setSeenAt(seenVal);
+    return { follows: enriched, system: sys, seenAt: seenVal };
   }, [user?.id]);
 
   useEffect(() => {
@@ -105,6 +99,28 @@ export default function NotificationBell() {
     load();
     const t = setInterval(load, 45000);
     return () => clearInterval(t);
+  }, [user?.id, load]);
+
+  // Realtime: bump the badge the instant a system notification is inserted for
+  // this user, without waiting for the 45s poll.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => load()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user?.id, load]);
 
   useEffect(() => {
@@ -116,11 +132,13 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  // A notification is unread only if the DB says so AND we haven't locally marked
-  // it seen. The localStorage `seen` fallback keeps the badge cleared across
-  // reload/re-login on this browser even if the DB update is blocked by RLS.
-  const unreadFollows = follows.filter((n) => !seen.has(n.id)).length;
-  const unreadSystem = system.filter((n) => !n.is_read && !seen.has(n.id)).length;
+  // Unread is decided purely from the DB. Follows count as unread when they
+  // arrived after the last bell-open (notifications_seen_at); system rows count
+  // when their is_read is still false. Both persist across devices/sessions.
+  const seenMs = seenAt ? Date.parse(seenAt) : 0;
+  const isFollowUnread = (n) => !seenAt || Date.parse(n.created_at || 0) > seenMs;
+  const unreadFollows = follows.filter(isFollowUnread).length;
+  const unreadSystem = system.filter((n) => !n.is_read).length;
   const unread = unreadFollows + unreadSystem;
 
   // Merge both sources, newest first.
@@ -134,25 +152,33 @@ export default function NotificationBell() {
     setOpen(next);
     if (!next || !user) return;
 
-    const { follows: ff, system: ss } = await load();
+    await load();
 
-    // Mark BOTH sources seen in localStorage. This clears the badge immediately
-    // and keeps it cleared across reload/re-login on this browser even if the DB
-    // update below is blocked by RLS. (Follow + notification ids are distinct
-    // UUIDs, so a single set is safe for both.)
-    const ns = new Set(seen);
-    ff.forEach((n) => ns.add(n.id));
-    ss.forEach((n) => ns.add(n.id));
-    setSeen(ns);
-    writeSeen(user.id, ns);
-
-    // Persist system read-state to the DB (source of truth across devices).
+    // Optimistically clear the badge: advance the local "seen" mark to now and
+    // flip system rows read. The DB writes below make it stick across devices.
+    const now = new Date().toISOString();
+    setSeenAt(now);
     setSystem((cur) => cur.map((n) => ({ ...n, is_read: true })));
-    const { error: updErr } = await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false);
+
+    // Source of truth: persist both read-markers to the DB.
+    const [{ error: seenErr }, { error: updErr }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .update({ notifications_seen_at: now })
+        .eq("id", user.id),
+      supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false),
+    ]);
+    if (seenErr) {
+      console.warn(
+        "[notifications] could not persist notifications_seen_at — apply the " +
+          "notifications_seen_at column from supabase-rls.sql:",
+        seenErr.message
+      );
+    }
     if (updErr) {
       console.warn(
         "[notifications] mark-as-read rejected — add the " +
@@ -215,7 +241,7 @@ export default function NotificationBell() {
                   <FollowNotifRow
                     key={item.key}
                     n={item.data}
-                    unread={!seen.has(item.data.id)}
+                    unread={isFollowUnread(item.data)}
                     busy={busyId === item.data.id}
                     onAccept={accept}
                     onDecline={decline}
@@ -225,7 +251,7 @@ export default function NotificationBell() {
                   <SystemNotifRow
                     key={item.key}
                     n={item.data}
-                    unread={!item.data.is_read && !seen.has(item.data.id)}
+                    unread={!item.data.is_read}
                   />
                 )
               )

@@ -294,7 +294,13 @@ export default function HomePage() {
 
         {showMap && (
           <>
-            <div className="relative overflow-hidden rounded-2xl border border-line">
+            {/* data-lenis-prevent: stop the smooth-scroll wrapper from hijacking
+                the wheel over the map, so scrolling there zooms the map instead
+                of scrolling the page. */}
+            <div
+              data-lenis-prevent
+              className="relative overflow-hidden rounded-2xl border border-line"
+            >
               <MapView
                 events={filtered}
                 flyToRef={flyToRef}

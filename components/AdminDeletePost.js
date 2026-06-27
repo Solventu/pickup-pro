@@ -55,9 +55,9 @@ export default function AdminDeletePost({
       await deletePostAsAdmin(postId);
       setConfirmOpen(false);
       onDeleted?.(postId);
-      toast("Postarea a fost ștearsă.");
+      toast("Post deleted.");
     } catch (err) {
-      toast(err?.message || "Ștergerea a eșuat.");
+      toast(err?.message || "Delete failed.");
     } finally {
       setDeleting(false);
     }
@@ -69,7 +69,7 @@ export default function AdminDeletePost({
         <button
           type="button"
           onClick={open}
-          aria-label="Șterge postarea (administrator)"
+          aria-label="Delete post (admin)"
           className={`flex items-center justify-center rounded-md p-1 text-[#ef4444] opacity-0 transition-opacity hover:bg-[#ef4444]/10 focus-visible:opacity-100 group-hover:opacity-100 ${className}`}
         >
           <TrashIcon size={16} />
@@ -80,18 +80,17 @@ export default function AdminDeletePost({
           onClick={open}
           className={`btn btn-danger-solid mt-4 w-full ${className}`}
         >
-          Șterge postarea
+          Delete post
         </button>
       )}
 
       <Modal
         open={confirmOpen}
         onClose={() => !deleting && setConfirmOpen(false)}
-        title="Ștergere postare"
+        title="Delete post"
       >
         <p className="text-sm text-muted">
-          Ștergi această postare ca administrator? Această acțiune nu poate fi
-          anulată.
+          Delete this post as an admin? This action cannot be undone.
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -99,14 +98,14 @@ export default function AdminDeletePost({
             className="btn btn-muted"
             disabled={deleting}
           >
-            Anulează
+            Cancel
           </button>
           <button
             onClick={doDelete}
             className="btn btn-danger-solid"
             disabled={deleting}
           >
-            {deleting ? "Se șterge…" : "Șterge"}
+            {deleting ? "Deleting…" : "Delete"}
           </button>
         </div>
       </Modal>

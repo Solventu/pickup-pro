@@ -1,5 +1,6 @@
 "use client";
 
+import { Calendar, MapPin, ExternalLink } from "lucide-react";
 import { formatDate, formatTime, hasValidCoords } from "@/lib/helpers";
 import ProgressBar from "./ProgressBar";
 
@@ -26,7 +27,8 @@ export default function EventCard({
           rel="noopener noreferrer"
           className="btn btn-primary flex-1"
         >
-          Register ↗
+          Register
+          <ExternalLink size={15} aria-hidden />
         </a>
       );
     }
@@ -75,13 +77,13 @@ export default function EventCard({
       {/* Meta */}
       <div className="mono flex flex-col gap-1 text-xs text-muted">
         <span className="flex items-center gap-1.5">
-          <span aria-hidden>🗓</span>
+          <Calendar size={13} className="shrink-0 text-muted" aria-hidden />
           {formatDate(event.date)}
           {event.time && <> · {formatTime(event.time)}</>}
         </span>
         {event.location && (
           <span className="flex items-center gap-1.5">
-            <span aria-hidden>📍</span>
+            <MapPin size={13} className="shrink-0 text-muted" aria-hidden />
             <span className="truncate">{event.location}</span>
           </span>
         )}
@@ -106,7 +108,8 @@ export default function EventCard({
             onClick={() => onMapClick?.(event)}
             className="btn btn-outline flex-1"
           >
-            📍 Map
+            <MapPin size={15} aria-hidden />
+            Map
           </button>
         )}
         {renderActionButton()}

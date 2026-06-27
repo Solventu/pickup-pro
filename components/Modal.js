@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { X } from "lucide-react";
 
 export default function Modal({ open, onClose, title, children }) {
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function Modal({ open, onClose, title, children }) {
               aria-label="Close"
               className="text-muted transition-colors hover:text-fg"
             >
-              ✕
+              <X size={18} aria-hidden />
             </button>
           </div>
         )}

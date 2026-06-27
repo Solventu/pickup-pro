@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import PostCard from "./PostCard";
 
 export default function PostModal({ post, open, currentUser, onClose, onDeleted }) {
@@ -33,7 +34,7 @@ export default function PostModal({ post, open, currentUser, onClose, onDeleted 
           aria-label="Close"
           className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-muted backdrop-blur transition-colors hover:text-fg"
         >
-          ✕
+          <X size={16} aria-hidden />
         </button>
         <div className="max-h-[90vh] overflow-y-auto p-5">
           <PostCard

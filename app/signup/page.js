@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
+import { Check, X } from "lucide-react";
 import { escapeLike } from "@/lib/helpers";
 import { USERNAME_RE } from "@/lib/sanitize";
+import { Reveal } from "@/components/Reveal";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -58,7 +60,7 @@ export default function SignupPage() {
   if (authLoading || user) {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center justify-center px-4 py-12">
-        <p className="mono text-sm text-muted">Se încarcă…</p>
+        <p className="mono text-sm text-muted">Loading…</p>
       </div>
     );
   }
@@ -111,25 +113,25 @@ export default function SignupPage() {
   };
 
   const usernameHint = {
-    idle: { text: "3–20 letters, numbers or underscores.", cls: "text-muted" },
-    invalid: { text: "3–20 chars — letters, numbers, underscores only.", cls: "text-red-400" },
-    checking: { text: "Checking availability…", cls: "text-muted" },
-    available: { text: "✓ Username available", cls: "text-accent" },
-    taken: { text: "✕ Username already taken", cls: "text-red-400" },
+    idle: { text: "3–20 letters, numbers or underscores.", cls: "text-muted", icon: null },
+    invalid: { text: "3–20 chars — letters, numbers, underscores only.", cls: "text-red-400", icon: null },
+    checking: { text: "Checking availability…", cls: "text-muted", icon: null },
+    available: { text: "Username available", cls: "text-accent", icon: <Check size={12} aria-hidden /> },
+    taken: { text: "Username already taken", cls: "text-red-400", icon: <X size={12} aria-hidden /> },
   }[status];
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-12">
-      <div className="mb-8">
+      <Reveal className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
         <p className="mt-2 text-sm text-muted">
           Your{" "}
           <span className="text-fg">username</span> is public — your email stays
           private.
         </p>
-      </div>
+      </Reveal>
 
-      <form onSubmit={submit} className="card flex flex-col gap-4 p-6">
+      <Reveal as="form" delay={0.08} onSubmit={submit} className="card flex flex-col gap-4 p-6">
         <div>
           <label className="field-label" htmlFor="username">
             Username
@@ -149,7 +151,8 @@ export default function SignupPage() {
               className="field-input pl-7"
             />
           </div>
-          <p className={`mono mt-1.5 text-xs ${usernameHint.cls}`}>
+          <p className={`mono mt-1.5 flex items-center gap-1 text-xs ${usernameHint.cls}`}>
+            {usernameHint.icon}
             {usernameHint.text}
           </p>
         </div>
@@ -210,14 +213,14 @@ export default function SignupPage() {
         >
           {submitting ? "Creating account…" : "Sign up"}
         </button>
-      </form>
+      </Reveal>
 
-      <p className="mono mt-6 text-center text-sm text-muted">
+      <Reveal as="p" delay={0.16} className="mono mt-6 text-center text-sm text-muted">
         Already have an account?{" "}
         <Link href="/login" className="text-accent hover:underline">
           Log in
         </Link>
-      </p>
+      </Reveal>
     </div>
   );
 }

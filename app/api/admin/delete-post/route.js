@@ -58,7 +58,7 @@ export async function POST(req) {
       user_id: authorId,
       type: "post_deleted",
       message:
-        "Una dintre postările tale a fost eliminată de administrator deoarece încalcă regulile comunității PickupPro.",
+        "One of your posts was removed by an admin for violating the PickupPro community guidelines.",
     });
     if (notifErr) {
       console.error("post_deleted notification insert failed:", notifErr.message);

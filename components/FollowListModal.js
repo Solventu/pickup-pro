@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { X, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { emitFollowsChanged } from "@/lib/helpers";
 import Avatar from "./Avatar";
@@ -29,11 +30,11 @@ export default function FollowListModal({
       return next;
     });
 
-  const title = mode === "followers" ? "Urmăritori" : "Urmărești";
+  const title = mode === "followers" ? "Followers" : "Following";
   const emptyText =
     mode === "followers"
-      ? "Niciun urmăritor încă"
-      : "Nu urmărește pe nimeni încă";
+      ? "No followers yet"
+      : "Not following anyone yet";
 
   // "Remove follower" is only available in the followers list of your OWN profile
   const canRemove =
@@ -206,17 +207,17 @@ export default function FollowListModal({
             aria-label="Close"
             className="text-muted transition-colors hover:text-fg"
           >
-            ✕
+            <X size={18} aria-hidden />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
           {loading ? (
-            <p className="mono p-4 text-sm text-muted">Se încarcă…</p>
+            <p className="mono p-4 text-sm text-muted">Loading…</p>
           ) : !canView ? (
             <div className="flex flex-col items-center gap-2 p-10 text-center">
-              <span className="text-3xl">🔒</span>
-              <p className="text-sm text-muted">Acest cont este privat</p>
+              <Lock size={28} className="text-muted" aria-hidden />
+              <p className="text-sm text-muted">This account is private</p>
             </div>
           ) : rows.length === 0 ? (
             <p className="mono p-6 text-center text-sm text-muted">{emptyText}</p>
@@ -240,7 +241,7 @@ export default function FollowListModal({
                           size={40}
                         />
                         <span className="min-w-0 flex-1 text-sm text-fg">
-                          Elimini @{row.username || "user"} din urmăritori?
+                          Remove @{row.username || "user"} from followers?
                         </span>
                         <div className="flex shrink-0 gap-2">
                           <button
@@ -248,14 +249,14 @@ export default function FollowListModal({
                             disabled={busyIds.has(row.id)}
                             className="btn btn-muted"
                           >
-                            Anulează
+                            Cancel
                           </button>
                           <button
                             onClick={() => removeFollower(row)}
                             disabled={busyIds.has(row.id)}
                             className="btn btn-danger"
                           >
-                            {busyIds.has(row.id) ? "…" : "Confirmă"}
+                            {busyIds.has(row.id) ? "…" : "Confirm"}
                           </button>
                         </div>
                       </>
@@ -276,7 +277,7 @@ export default function FollowListModal({
                         </button>
 
                         {isSelf ? (
-                          <span className="mono text-xs text-muted">Tu</span>
+                          <span className="mono text-xs text-muted">You</span>
                         ) : (
                           <button
                             onClick={() => toggleFollow(row)}
@@ -292,20 +293,20 @@ export default function FollowListModal({
                             {busyIds.has(row.id)
                               ? "…"
                               : isFollowing
-                              ? "Urmărești"
+                              ? "Following"
                               : isPending
-                              ? "Solicitat"
-                              : "Urmărește"}
+                              ? "Requested"
+                              : "Follow"}
                           </button>
                         )}
 
                         {canRemove && !isSelf && (
                           <button
                             onClick={() => setConfirmId(row.id)}
-                            title="Elimină din urmăritori"
+                            title="Remove from followers"
                             className="shrink-0 px-1.5 text-sm text-muted opacity-100 transition-opacity hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100"
                           >
-                            Elimină
+                            Remove
                           </button>
                         )}
                       </>

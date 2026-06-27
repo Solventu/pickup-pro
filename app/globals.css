@@ -2,21 +2,22 @@
 
 /* ============================================================
    PickupPro — Design System (Tailwind v4)
-   bg #0D1117 · cards #0A0A0A · line #1f2937
-   accent #16a34a (green) · orange #f97316 (official only)
-   text #f0f6ff · muted #8b949e
+   Warm, friendly dark theme.
+   bg #1a1b26 (warm navy) · cards #222433 · line #2f3146
+   accent #22c55e (soft green) · orange #fb923c (official only)
+   text #e8e8f2 · muted #9b9bb3
    headings: Space Grotesk · details: DM Mono
    ============================================================ */
 
 @theme {
-  --color-bg: #0d1117;
-  --color-card: #0a0a0a;
-  --color-line: #1f2937;
-  --color-accent: #16a34a;
-  --color-accent-strong: #15803d;
-  --color-orange: #f97316;
-  --color-fg: #f0f6ff;
-  --color-muted: #8b949e;
+  --color-bg: #1a1b26;
+  --color-card: #222433;
+  --color-line: #2f3146;
+  --color-accent: #22c55e;
+  --color-accent-strong: #16a34a;
+  --color-orange: #fb923c;
+  --color-fg: #e8e8f2;
+  --color-muted: #9b9bb3;
 
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, "SFMono-Regular", monospace;
@@ -34,7 +35,7 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: rgba(22, 163, 74, 0.3);
+    background: rgba(34, 197, 94, 0.3);
     color: #fff;
   }
   ::-webkit-scrollbar {
@@ -42,10 +43,10 @@
     height: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #0d1117;
+    background: #1a1b26;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1f2937;
+    background: #2f3146;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -58,13 +59,40 @@
   .card {
     background-color: var(--color-card);
     border: 1px solid var(--color-line);
-    border-radius: 0.875rem;
+    border-radius: 1rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .card-hover:hover {
-    border-color: rgba(22, 163, 74, 0.3);
-    box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.15),
-      0 0 28px -6px rgba(22, 163, 74, 0.25);
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15),
+      0 0 28px -6px rgba(34, 197, 94, 0.25);
+  }
+
+  /* ---------- loading skeleton ----------
+     A sweeping highlight instead of a flat pulse — reads as "content loading"
+     rather than "broken". Use in place of `animate-pulse bg-card`. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-card);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
   }
 
   /* ---------- buttons ---------- */
@@ -76,13 +104,22 @@
     font-weight: 500;
     font-size: 0.875rem;
     line-height: 1;
-    border-radius: 0.625rem;
+    border-radius: 0.75rem;
     padding: 0.6rem 1rem;
     border: 1px solid transparent;
     transition: background-color 0.15s ease, border-color 0.15s ease,
-      color 0.15s ease;
+      color 0.15s ease, transform 0.08s ease;
     cursor: pointer;
     white-space: nowrap;
+  }
+  /* Tactile press — every button dips slightly when clicked. */
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn:focus-visible,
+  .pill:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
   .btn:disabled {
     opacity: 0.5;
@@ -100,10 +137,10 @@
   .btn-outline {
     background: transparent;
     color: var(--color-accent);
-    border-color: rgba(22, 163, 74, 0.5);
+    border-color: rgba(34, 197, 94, 0.5);
   }
   .btn-outline:hover:not(:disabled) {
-    background-color: rgba(22, 163, 74, 0.12);
+    background-color: rgba(34, 197, 94, 0.12);
     border-color: var(--color-accent);
   }
   .btn-muted {
@@ -113,7 +150,7 @@
   }
   .btn-muted:hover:not(:disabled) {
     color: var(--color-fg);
-    border-color: #374151;
+    border-color: #3a3d56;
   }
   .btn-danger {
     background: transparent;
@@ -153,9 +190,12 @@
     cursor: pointer;
     white-space: nowrap;
   }
+  .pill:active {
+    transform: scale(0.96);
+  }
   .pill:hover {
     color: var(--color-fg);
-    border-color: #374151;
+    border-color: #3a3d56;
   }
   .pill-active,
   .pill-active:hover {
@@ -179,8 +219,8 @@
   }
   .badge-casual {
     color: var(--color-accent);
-    background: rgba(22, 163, 74, 0.12);
-    border: 1px solid rgba(22, 163, 74, 0.3);
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.3);
   }
   .badge-official {
     color: var(--color-orange);
@@ -210,10 +250,10 @@
   .field-textarea,
   .field-select {
     width: 100%;
-    background-color: #0d1117;
+    background-color: #1a1b26;
     border: 1px solid var(--color-line);
     color: var(--color-fg);
-    border-radius: 0.625rem;
+    border-radius: 0.75rem;
     padding: 0.65rem 0.85rem;
     font-size: 0.9rem;
     font-family: var(--font-heading);
@@ -228,7 +268,7 @@
   .field-select:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
   }
   .field-textarea {
     resize: vertical;
@@ -242,7 +282,7 @@
     padding-right: 2.2rem;
   }
   .field-select option {
-    background-color: #0d1117;
+    background-color: #1a1b26;
     color: var(--color-fg);
   }
 
@@ -250,7 +290,7 @@
   .progress-track {
     width: 100%;
     height: 0.4rem;
-    background-color: #1f2937;
+    background-color: #2f3146;
     border-radius: 9999px;
     overflow: hidden;
   }
@@ -292,6 +332,38 @@
     }
   }
 
+  /* ---------- hero atmosphere ----------
+     A soft green radial glow behind the hero + a fine grain overlay so the
+     flat dark background reads with depth instead of as a solid block. Both
+     sit on a wrapper marked .hero-atmos (position: relative) and are purely
+     decorative (pointer-events: none, aria-hidden via ::before/::after). */
+  .hero-atmos {
+    position: relative;
+    isolation: isolate;
+  }
+  .hero-atmos::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 130%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 55% at 20% 25%, rgba(34, 197, 94, 0.18), transparent 70%),
+      radial-gradient(45% 45% at 85% 10%, rgba(249, 115, 22, 0.1), transparent 70%);
+    filter: blur(8px);
+  }
+  .hero-atmos::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    mask-image: radial-gradient(70% 60% at 30% 30%, #000 40%, transparent 100%);
+  }
+
   /* ---------- outlined hero text ---------- */
   .text-outline {
     color: transparent;
@@ -319,7 +391,7 @@
   .modal-panel {
     background-color: var(--color-card);
     border: 1px solid var(--color-line);
-    border-radius: 1rem;
+    border-radius: 1.25rem;
     width: 100%;
     max-width: 30rem;
     padding: 1.5rem;
@@ -357,8 +429,8 @@
     transform: scale(1.3);
   }
   .event-pin-casual {
-    background-color: #16a34a;
-    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.22), 0 0 14px rgba(22, 163, 74, 0.55);
+    background-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.22), 0 0 14px rgba(34, 197, 94, 0.55);
   }
   .event-pin-official {
     background-color: #f97316;
@@ -381,36 +453,36 @@
 
 /* ---------- Mapbox dark popup overrides ---------- */
 .mapboxgl-popup-content {
-  background-color: #0a0a0a !important;
-  border: 1px solid #1f2937;
+  background-color: #222433 !important;
+  border: 1px solid #2f3146;
   border-radius: 0.75rem;
   padding: 0.85rem 0.95rem;
-  color: #f0f6ff;
+  color: #e8e8f2;
   font-family: var(--font-heading);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
 }
 .mapboxgl-popup-close-button {
-  color: #8b949e;
+  color: #9b9bb3;
   font-size: 1.1rem;
   padding: 0.1rem 0.45rem;
   right: 2px;
   top: 2px;
 }
 .mapboxgl-popup-close-button:hover {
-  color: #f0f6ff;
+  color: #e8e8f2;
   background: transparent;
 }
 .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
-  border-bottom-color: #0a0a0a;
+  border-bottom-color: #222433;
 }
 .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
-  border-top-color: #0a0a0a;
+  border-top-color: #222433;
 }
 .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
-  border-right-color: #0a0a0a;
+  border-right-color: #222433;
 }
 .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
-  border-left-color: #0a0a0a;
+  border-left-color: #222433;
 }
 .mapboxgl-ctrl-logo {
   opacity: 0.35;
@@ -419,5 +491,5 @@
   background: rgba(10, 10, 10, 0.6) !important;
 }
 .mapboxgl-ctrl-attrib a {
-  color: #8b949e !important;
+  color: #9b9bb3 !important;
 }

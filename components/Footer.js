@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MapPin, Clock, Users } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/", label: "Acasă" },
+  { href: "/", label: "Home" },
   { href: "/feed", label: "Feed" },
-  { href: "/login", label: "Autentificare" },
-  { href: "/signup", label: "Înregistrare" },
+  { href: "/login", label: "Log in" },
+  { href: "/signup", label: "Sign up" },
 ];
 
 export default function Footer() {
@@ -26,18 +27,18 @@ export default function Footer() {
               </span>
             </div>
             <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted sm:mx-0">
-              Platforma pentru jocuri de pickup și competiții oficiale din
-              Timișoara — în timp real, fără complicații.
+              The platform for pickup games and official competitions — live,
+              worldwide, without the hassle.
             </p>
             <p className="mono mt-4 flex items-center justify-center gap-2 text-xs text-muted sm:justify-start">
               <span className="inline-block h-2 w-2 rounded-full bg-accent" />
-              LIVE · Timișoara, România
+              LIVE · Worldwide
             </p>
           </div>
 
-          {/* Column 2 — Navigare */}
+          {/* Column 2 — Navigation */}
           <div>
-            <h4 className="text-sm font-medium text-fg">Navigare</h4>
+            <h4 className="text-sm font-medium text-fg">Navigation</h4>
             <ul className="mono mt-4 flex flex-col gap-2.5 text-sm">
               {NAV_LINKS.map(({ href, label }) => {
                 const isActive = pathname === href;
@@ -48,8 +49,8 @@ export default function Footer() {
                       aria-current={isActive ? "page" : undefined}
                       className={`transition-colors duration-150 ${
                         isActive
-                          ? "text-[#f0f6ff]"
-                          : "text-[#8b949e] hover:text-[#f0f6ff]"
+                          ? "text-[#e8e8f2]"
+                          : "text-[#9b9bb3] hover:text-[#e8e8f2]"
                       }`}
                     >
                       {label}
@@ -60,20 +61,26 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3 — Despre */}
+          {/* Column 3 — About */}
           <div>
-            <h4 className="text-sm font-medium text-fg">Despre</h4>
+            <h4 className="text-sm font-medium text-fg">About</h4>
             <ul className="mono mt-4 flex flex-col gap-2.5 text-sm text-muted">
-              <li>📍 Timișoara, România</li>
-              <li>🕐 Actualizat zilnic</li>
-              <li>👥 Comunitate deschisă</li>
+              <li className="flex items-center justify-center gap-2 sm:justify-start">
+                <MapPin size={13} aria-hidden /> Worldwide
+              </li>
+              <li className="flex items-center justify-center gap-2 sm:justify-start">
+                <Clock size={13} aria-hidden /> Updated in real time
+              </li>
+              <li className="flex items-center justify-center gap-2 sm:justify-start">
+                <Users size={13} aria-hidden /> Open community
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="mono mt-10 flex flex-col gap-2 border-t border-line pt-6 text-center text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <span>© 2026 PickupPro · Timișoara, România</span>
+          <span>© 2026 PickupPro</span>
           <span>Built by Erik · v1.0</span>
         </div>
       </div>

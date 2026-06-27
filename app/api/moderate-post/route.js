@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 const MODEL = "claude-sonnet-4-6";
 
-const SYSTEM_PROMPT = `You are a content moderator for PickupPro, a sports platform for Timișoara, Romania. Analyze the following post and determine if it should be allowed or rejected.
+const SYSTEM_PROMPT = `You are a content moderator for PickupPro, a worldwide sports platform. Analyze the following post and determine if it should be allowed or rejected.
 
 REJECT the post if it contains:
 - Profanity or insults in ANY language (Romanian, English, etc.)
@@ -24,7 +24,7 @@ ALLOW the post if it:
 Respond with ONLY a JSON object:
 {
   'allowed': true/false,
-  'reason': 'brief explanation in Romanian if rejected'
+  'reason': 'brief explanation in English if rejected'
 }`;
 
 // Tolerant parser: the model is asked for JSON but the example uses single

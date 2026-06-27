@@ -170,3 +170,8 @@ create policy "service_can_insert" on notifications
 drop policy if exists "users_update_own_notifications" on notifications;
 create policy "users_update_own_notifications" on notifications
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- You can delete your OWN notifications (the bell's dismiss "X" + "Clear all").
+drop policy if exists "users_delete_own_notifications" on notifications;
+create policy "users_delete_own_notifications" on notifications
+  for delete using (auth.uid() = user_id);

@@ -191,7 +191,7 @@ export default function EditProfileModal({ open, onClose, profile, onSaved }) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="field-input"
-              placeholder="Timișoara"
+              placeholder="Your city"
             />
           </div>
         </div>

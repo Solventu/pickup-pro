@@ -4,11 +4,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Lock, Heart, MessageCircle, Check } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 import { enrichPosts } from "@/lib/posts";
 import { timeAgo, emitFollowsChanged } from "@/lib/helpers";
 import Avatar from "@/components/Avatar";
+import { Reveal } from "@/components/Reveal";
 import EditProfileModal from "@/components/EditProfileModal";
 import PostModal from "@/components/PostModal";
 import FollowListModal from "@/components/FollowListModal";
@@ -198,7 +200,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-        <div className="h-40 animate-pulse rounded-2xl border border-line bg-card" />
+        <div className="skeleton h-40 rounded-2xl border border-line" />
       </div>
     );
   }
@@ -220,7 +222,12 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       {/* Header */}
-      <div className="card flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
+      <Reveal className="card relative flex flex-col gap-5 overflow-hidden p-6 sm:flex-row sm:items-center">
+        {/* Soft accent glow behind the avatar */}
+        <div
+          className="pointer-events-none absolute -left-12 -top-16 h-48 w-48 rounded-full bg-accent/15 blur-3xl"
+          aria-hidden
+        />
         <Avatar
           username={profile.username}
           avatarUrl={profile.avatar_url}
@@ -233,7 +240,9 @@ export default function ProfilePage() {
               @{profile.username || "unknown"}
             </h1>
             {profile.is_private && (
-              <span className="badge badge-sport">🔒 Private</span>
+              <span className="badge badge-sport">
+                <Lock size={11} aria-hidden /> Private
+              </span>
             )}
           </div>
 
@@ -247,24 +256,20 @@ export default function ProfilePage() {
             <p className="mt-2 max-w-xl text-sm text-fg/90">{profile.bio}</p>
           )}
 
-          <div className="mono mt-3 flex gap-6 text-sm">
+          <div className="mono mt-3.5 flex flex-wrap gap-2.5 text-sm">
             <button
               onClick={() => setFollowModal("followers")}
-              className="group"
+              className="rounded-lg border border-line px-3 py-1.5 transition-colors hover:border-accent/40"
             >
-              <span className="font-medium text-fg group-hover:text-accent">
-                {followerCount}
-              </span>{" "}
-              <span className="text-muted group-hover:text-fg">followers</span>
+              <span className="font-medium text-fg">{followerCount}</span>{" "}
+              <span className="text-muted">followers</span>
             </button>
             <button
               onClick={() => setFollowModal("following")}
-              className="group"
+              className="rounded-lg border border-line px-3 py-1.5 transition-colors hover:border-accent/40"
             >
-              <span className="font-medium text-fg group-hover:text-accent">
-                {followingCount}
-              </span>{" "}
-              <span className="text-muted group-hover:text-fg">following</span>
+              <span className="font-medium text-fg">{followingCount}</span>{" "}
+              <span className="text-muted">following</span>
             </button>
           </div>
         </div>
@@ -288,7 +293,8 @@ export default function ProfilePage() {
               disabled={relBusy}
               className="btn btn-muted"
             >
-              Following ✓
+              Following
+              <Check size={15} aria-hidden />
             </button>
           ) : rel === "pending" ? (
             <button
@@ -308,13 +314,19 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-      </div>
+      </Reveal>
 
       {/* Posts */}
       <div className="mt-8">
+        {canView && (
+          <div className="mono mb-3 flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] text-muted">
+            <span className="h-px w-7 bg-accent/70" aria-hidden />
+            Posts
+          </div>
+        )}
         {!canView ? (
           <div className="card flex flex-col items-center justify-center gap-3 p-16 text-center">
-            <span className="text-4xl">🔒</span>
+            <Lock size={36} className="text-muted" aria-hidden />
             <p className="text-lg font-medium">This account is private</p>
             <p className="text-sm text-muted">
               {rel === "pending"
@@ -327,7 +339,7 @@ export default function ProfilePage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-square animate-pulse rounded-xl border border-line bg-card"
+                className="skeleton aspect-square rounded-xl border border-line"
               />
             ))}
           </div>
@@ -343,13 +355,14 @@ export default function ProfilePage() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {posts.map((p) => (
-              <ProfilePostTile
-                key={p.id}
-                post={p}
-                isAdmin={isAdmin}
-                onClick={() => setActivePost(p)}
-                onDeleted={handlePostDeleted}
-              />
+              <Reveal key={p.id} y={12}>
+                <ProfilePostTile
+                  post={p}
+                  isAdmin={isAdmin}
+                  onClick={() => setActivePost(p)}
+                  onDeleted={handlePostDeleted}
+                />
+              </Reveal>
             ))}
           </div>
         )}
@@ -388,7 +401,7 @@ function ProfilePostTile({ post, onClick, isAdmin, onDeleted }) {
     <button
       type="button"
       onClick={onClick}
-      className="relative aspect-square w-full overflow-hidden rounded-xl border border-line bg-[#0A0A0A] text-left"
+      className="relative aspect-square w-full overflow-hidden rounded-xl border border-line bg-[#1a1b26] text-left"
     >
       <img
         src={post.image_url}
@@ -397,8 +410,12 @@ function ProfilePostTile({ post, onClick, isAdmin, onDeleted }) {
       />
       <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
         <div className="mono flex gap-3 p-3 text-xs text-white">
-          <span>♥ {post.like_count}</span>
-          <span>💬 {post.comment_count}</span>
+          <span className="flex items-center gap-1">
+            <Heart size={12} aria-hidden /> {post.like_count}
+          </span>
+          <span className="flex items-center gap-1">
+            <MessageCircle size={12} aria-hidden /> {post.comment_count}
+          </span>
         </div>
       </div>
     </button>
@@ -416,8 +433,10 @@ function ProfilePostTile({ post, onClick, isAdmin, onDeleted }) {
       </div>
       <div className="mono flex items-center justify-between text-xs text-muted">
         <span>{timeAgo(post.created_at)}</span>
-        <span>
-          ♥ {post.like_count} · 💬 {post.comment_count}
+        <span className="flex items-center gap-1.5">
+          <Heart size={12} aria-hidden /> {post.like_count}
+          <span className="opacity-50">·</span>
+          <MessageCircle size={12} aria-hidden /> {post.comment_count}
         </span>
       </div>
     </button>

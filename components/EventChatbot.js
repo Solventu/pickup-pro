@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Minus, X } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/helpers";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
@@ -10,7 +11,7 @@ const WELCOME = {
   role: "assistant",
   welcome: true,
   content:
-    "Bună ziua. Spuneți-mi ce sport căutați și când sunteți disponibil — vă recomand cele mai potrivite evenimente din Timișoara.",
+    "Hi! Tell me what sport you're looking for and when you're available — I'll recommend the best matching events for you.",
 };
 
 function ChatIcon() {
@@ -22,7 +23,7 @@ function ChatIcon() {
 }
 
 function now() {
-  return new Date().toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" });
+  return new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 // Render text with bare URLs turned into clickable links that open in a new tab.
@@ -67,11 +68,11 @@ function EventMiniCard({ event, onFlyTo }) {
         {event.location && ` · ${event.location}`}
       </p>
       {spots != null && (
-        <p className="mono mt-1 text-xs text-accent">{spots} locuri disponibile</p>
+        <p className="mono mt-1 text-xs text-accent">{spots} spots available</p>
       )}
       <div className="mt-2.5 flex flex-wrap gap-2">
         <button onClick={() => onFlyTo(event)} className="btn btn-outline text-xs">
-          Vezi pe hartă
+          See on map
         </button>
         {event.source_url && (
           <a
@@ -80,7 +81,7 @@ function EventMiniCard({ event, onFlyTo }) {
             rel="noopener noreferrer"
             className="btn btn-muted text-xs"
           >
-            Vezi detalii oficiale
+            See official details
           </a>
         )}
       </div>
@@ -165,7 +166,7 @@ export default function EventChatbot() {
         ...m,
         {
           role: "assistant",
-          content: data.reply || "Îmi pare rău, am întâmpinat o eroare. Încearcă din nou.",
+          content: data.reply || "Sorry, something went wrong. Please try again.",
           events: Array.isArray(data.events) ? data.events : [],
           ts: now(),
         },
@@ -173,7 +174,7 @@ export default function EventChatbot() {
     } catch {
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: "Îmi pare rău, am întâmpinat o eroare. Încearcă din nou.", ts: now() },
+        { role: "assistant", content: "Sorry, something went wrong. Please try again.", ts: now() },
       ]);
     } finally {
       setLoading(false);
@@ -190,7 +191,7 @@ export default function EventChatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Deschide asistentul PickupPro"
+          aria-label="Open PickupPro assistant"
           className="fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-2xl transition-transform hover:scale-105"
         >
           <ChatIcon />
@@ -211,17 +212,17 @@ export default function EventChatbot() {
             <p className="flex-1 text-sm font-semibold text-fg">PickupPro Assistant</p>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Minimizează"
+              aria-label="Minimize"
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:text-fg"
             >
-              <span className="text-lg leading-none">–</span>
+              <Minus size={18} aria-hidden />
             </button>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Închide"
+              aria-label="Close"
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:text-fg"
             >
-              <span className="text-lg leading-none">×</span>
+              <X size={18} aria-hidden />
             </button>
           </div>
 
@@ -252,7 +253,7 @@ export default function EventChatbot() {
 
             {loading && (
               <div className="flex items-start">
-                <div className="flex gap-1 rounded-2xl bg-line px-3 py-3" aria-label="Se încarcă">
+                <div className="flex gap-1 rounded-2xl bg-line px-3 py-3" aria-label="Loading">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.3s]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.15s]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted" />
@@ -267,7 +268,7 @@ export default function EventChatbot() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Întreabă despre evenimente sportive..."
+              placeholder="Ask about sports events..."
               className="field-input flex-1"
               disabled={loading}
             />

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { X, ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { SPORTS, POST_IMAGES_BUCKET } from "@/lib/constants";
 import { validateImageFile, randomImageName } from "@/lib/upload";
@@ -105,8 +106,8 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
         const verdict = await res.json().catch(() => ({ allowed: true }));
         if (verdict && verdict.allowed === false) {
           setError(
-            `Postarea ta nu a putut fi publicată: ${
-              verdict.reason || "conținut nepermis."
+            `Your post couldn't be published: ${
+              verdict.reason || "content not allowed."
             }`
           );
           setPhase("idle");
@@ -188,10 +189,10 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           <button
             type="button"
             onClick={clearFile}
-            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm text-white hover:bg-black"
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
             aria-label="Remove image"
           >
-            ✕
+            <X size={15} aria-hidden />
           </button>
         </div>
       )}
@@ -202,7 +203,7 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           onClick={() => fileRef.current?.click()}
           className="btn btn-muted px-2 py-1 text-xs"
         >
-          📷 Photo
+          <ImageIcon size={14} aria-hidden /> Photo
         </button>
         <input
           ref={fileRef}
@@ -253,7 +254,7 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           className="btn btn-primary px-3 py-1 text-xs"
         >
           {phase === "checking"
-            ? "Se verifică conținutul…"
+            ? "Checking content…"
             : phase === "posting"
             ? "Posting…"
             : "Post"}

@@ -5,6 +5,7 @@ import { ToastProvider } from "@/lib/ToastProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import EventChatbot from "@/components/EventChatbot";
+import SmoothScroll from "@/components/SmoothScroll";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -20,9 +21,9 @@ const dmMono = DM_Mono({
 });
 
 export const metadata = {
-  title: "PickupPro — Find your next game in Timișoara",
+  title: "PickupPro — Find your next game",
   description:
-    "Discover pickup sports games, follow local athletes, and join the community in Timișoara.",
+    "Discover pickup sports games worldwide, follow athletes, and join the community.",
 };
 
 // maximumScale: 1 stops iOS Safari from auto-zooming when an input is focused
@@ -41,10 +42,12 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen antialiased">
         <AuthProvider>
           <ToastProvider>
-            <Navbar />
-            <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-            <Footer />
-            <EventChatbot />
+            <SmoothScroll>
+              <Navbar />
+              <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+              <Footer />
+              <EventChatbot />
+            </SmoothScroll>
           </ToastProvider>
         </AuthProvider>
       </body>

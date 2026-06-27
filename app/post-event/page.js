@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
-import { SPORTS, MAP } from "@/lib/constants";
+import { SPORTS } from "@/lib/constants";
 import { cleanText } from "@/lib/sanitize";
+import { Reveal } from "@/components/Reveal";
 
 async function geocodeLocation(location) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   if (!token) throw new Error("Mapbox token is not configured.");
+  // No country restriction — events can be created anywhere in the world.
   const url =
     `https://api.mapbox.com/geocoding/v5/mapbox.places/` +
     `${encodeURIComponent(location)}.json` +
-    `?access_token=${token}&limit=1&country=ro&proximity=${MAP.lng},${MAP.lat}`;
+    `?access_token=${token}&limit=1`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Geocoding request failed.");
   const json = await res.json();
@@ -59,7 +61,7 @@ export default function PostEventPage() {
       const geo = await geocodeLocation(location);
       if (!geo) {
         setError(
-          "Couldn’t find that location. Try a more specific address in Timișoara."
+          "Couldn’t find that location. Try a more specific address."
         );
         setSubmitting(false);
         return;
@@ -91,7 +93,7 @@ export default function PostEventPage() {
   if (authLoading || adminLoading) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
-        <div className="h-72 animate-pulse rounded-2xl border border-line bg-card" />
+        <div className="skeleton h-72 rounded-2xl border border-line" />
       </div>
     );
   }
@@ -112,15 +114,15 @@ export default function PostEventPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="mb-8">
+      <Reveal className="mb-8">
         <span className="badge badge-official">Admin</span>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">Post an event</h1>
         <p className="mt-2 text-sm text-muted">
           The location is geocoded automatically and pinned on the map.
         </p>
-      </div>
+      </Reveal>
 
-      <form onSubmit={submit} className="card flex flex-col gap-4 p-6">
+      <Reveal as="form" delay={0.08} onSubmit={submit} className="card flex flex-col gap-4 p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="field-label">Sport</label>
@@ -201,7 +203,7 @@ export default function PostEventPage() {
             value={form.location}
             onChange={update("location")}
             className="field-input"
-            placeholder="Parcul Central, Timișoara"
+            placeholder="Central Park, New York"
           />
           <p className="mono mt-1.5 text-xs text-muted">
             Geocoded via Mapbox on submit.
@@ -233,7 +235,7 @@ export default function PostEventPage() {
         >
           {submitting ? "Creating event…" : "Post event"}
         </button>
-      </form>
+      </Reveal>
     </div>
   );
 }

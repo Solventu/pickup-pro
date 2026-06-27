@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Calendar, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 import { timeAgo } from "@/lib/helpers";
@@ -18,8 +19,8 @@ function HeartIcon({ filled }) {
       width="16"
       height="16"
       viewBox="0 0 24 24"
-      fill={filled ? "#16a34a" : "none"}
-      stroke={filled ? "#16a34a" : "currentColor"}
+      fill={filled ? "#22c55e" : "none"}
+      stroke={filled ? "#22c55e" : "currentColor"}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -164,7 +165,7 @@ export default function PostCard({
               aria-label="Post options"
               className="rounded-md px-2 py-1 text-muted hover:text-fg"
             >
-              ⋯
+              <MoreHorizontal size={16} aria-hidden />
             </button>
             {menuOpen && (
               <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-line bg-card shadow-xl">
@@ -207,7 +208,7 @@ export default function PostCard({
 
       {/* Photo — Instagram-style fixed crop, full width, no black bars */}
       {post.image_url && (
-        <div className="mt-2 aspect-square w-full overflow-hidden rounded-lg border border-line bg-[#0A0A0A]">
+        <div className="mt-2 aspect-square w-full overflow-hidden rounded-lg border border-line bg-[#1a1b26]">
           <img
             src={post.image_url}
             alt={post.title || "post photo"}
@@ -222,7 +223,7 @@ export default function PostCard({
           href="/"
           className="badge badge-casual mt-2 w-fit hover:brightness-125"
         >
-          📅 {post.event.title}
+          <Calendar size={11} aria-hidden /> {post.event.title}
         </Link>
       )}
 

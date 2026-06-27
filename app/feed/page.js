@@ -6,8 +6,11 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 import { enrichPosts } from "@/lib/posts";
 import { FOLLOWS_CHANGED } from "@/lib/helpers";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import PostCard from "@/components/PostCard";
 import PostComposer from "@/components/PostComposer";
+import { Reveal } from "@/components/Reveal";
 
 export default function FeedPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -104,10 +107,18 @@ export default function FeedPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <h1 className="text-3xl font-bold tracking-tight">Athlete Feed</h1>
-      <p className="mt-1 text-sm text-muted">
-        Posts from the Timișoara sports community.
-      </p>
+      <Reveal>
+        <div className="mono mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent">
+          <span className="live-dot" aria-hidden />
+          Community · Live
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Athlete Feed
+        </h1>
+        <p className="mt-2 max-w-md text-sm text-muted sm:text-base">
+          Posts from the global sports community — wins, callouts, and games.
+        </p>
+      </Reveal>
 
       {/* Tabs */}
       <div className="mt-6 flex gap-2 border-b border-line">
@@ -115,13 +126,13 @@ export default function FeedPage() {
           active={tab === "following"}
           onClick={() => setTab("following")}
         >
-          Urmărești
+          Following
         </TabButton>
         <TabButton
           active={tab === "discover"}
           onClick={() => setTab("discover")}
         >
-          Descoperă
+          Discover
         </TabButton>
       </div>
 
@@ -151,7 +162,7 @@ export default function FeedPage() {
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-[0.875rem] border border-line bg-card"
+              className="skeleton h-28 rounded-[0.875rem] border border-line"
             />
           ))
         ) : tab === "following" && !user ? (
@@ -163,13 +174,14 @@ export default function FeedPage() {
           tab === "following" ? (
             <div className="card flex flex-col items-center justify-center gap-3 p-12 text-center">
               <p className="text-lg font-medium">
-                Nu urmărești pe nimeni încă.
+                You&apos;re not following anyone yet.
               </p>
               <button
                 onClick={() => setTab("discover")}
                 className="btn btn-outline"
               >
-                Descoperă atleți →
+                Discover athletes
+                <ArrowRight size={15} aria-hidden />
               </button>
             </div>
           ) : (
@@ -180,12 +192,13 @@ export default function FeedPage() {
           )
         ) : (
           posts.map((p) => (
-            <PostCard
-              key={p.id}
-              post={p}
-              currentUser={user}
-              onDeleted={handleDeleted}
-            />
+            <Reveal key={p.id} y={12}>
+              <PostCard
+                post={p}
+                currentUser={user}
+                onDeleted={handleDeleted}
+              />
+            </Reveal>
           ))
         )}
       </div>
@@ -198,12 +211,17 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`relative -mb-px px-4 py-2.5 text-sm font-medium transition-colors ${
-        active
-          ? "border-b-2 border-accent text-fg"
-          : "border-b-2 border-transparent text-muted hover:text-fg"
+        active ? "text-fg" : "text-muted hover:text-fg"
       }`}
     >
       {children}
+      {active && (
+        <motion.span
+          layoutId="feedTabIndicator"
+          className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent"
+          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+        />
+      )}
     </button>
   );
 }

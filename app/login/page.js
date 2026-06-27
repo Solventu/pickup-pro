@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
+import { Reveal } from "@/components/Reveal";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function LoginPage() {
   if (authLoading || user) {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md items-center justify-center px-4 py-12">
-        <p className="mono text-sm text-muted">Se încarcă…</p>
+        <p className="mono text-sm text-muted">Loading…</p>
       </div>
     );
   }
@@ -43,14 +44,14 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center px-4 py-12">
-      <div className="mb-8">
+      <Reveal className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
         <p className="mt-2 text-sm text-muted">
           Log in to join games and follow athletes.
         </p>
-      </div>
+      </Reveal>
 
-      <form onSubmit={submit} className="card flex flex-col gap-4 p-6">
+      <Reveal as="form" delay={0.08} onSubmit={submit} className="card flex flex-col gap-4 p-6">
         <div>
           <label className="field-label" htmlFor="email">
             Email
@@ -96,14 +97,14 @@ export default function LoginPage() {
         >
           {loading ? "Logging in…" : "Log in"}
         </button>
-      </form>
+      </Reveal>
 
-      <p className="mono mt-6 text-center text-sm text-muted">
+      <Reveal as="p" delay={0.16} className="mono mt-6 text-center text-sm text-muted">
         No account?{" "}
         <Link href="/signup" className="text-accent hover:underline">
           Sign up
         </Link>
-      </p>
+      </Reveal>
     </div>
   );
 }

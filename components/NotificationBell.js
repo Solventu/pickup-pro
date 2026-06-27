@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 import { timeAgo } from "@/lib/helpers";
@@ -153,14 +154,23 @@ export default function NotificationBell() {
   // when their is_read is still false. Both persist across devices/sessions.
   const seenMs = seenAt ? Date.parse(seenAt) : 0;
   const isFollowUnread = (n) => !seenAt || Date.parse(n.created_at || 0) > seenMs;
+  // Ignore malformed system rows with no message text — they render as an empty
+  // notification, which looks broken.
+  const visibleSystem = system.filter((n) => n.message && n.message.trim());
+  // Pending follow requests always show (they need Accept/Decline); informational
+  // "started following you" rows clear once seen / after "Clear all" advances the
+  // seen marker — so the list doesn't pile up forever.
+  const visibleFollows = follows.filter(
+    (f) => f.status === "pending" || isFollowUnread(f)
+  );
   const unreadFollows = follows.filter(isFollowUnread).length;
-  const unreadSystem = system.filter((n) => !n.is_read).length;
+  const unreadSystem = visibleSystem.filter((n) => !n.is_read).length;
   const unread = unreadFollows + unreadSystem;
 
   // Merge both sources, newest first.
   const items = [
-    ...follows.map((f) => ({ key: `f:${f.id}`, kind: "follow", at: f.created_at, data: f })),
-    ...system.map((s) => ({ key: `s:${s.id}`, kind: "system", at: s.created_at, data: s })),
+    ...visibleFollows.map((f) => ({ key: `f:${f.id}`, kind: "follow", at: f.created_at, data: f })),
+    ...visibleSystem.map((s) => ({ key: `s:${s.id}`, kind: "system", at: s.created_at, data: s })),
   ].sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
 
   const togglePanel = async () => {
@@ -224,6 +234,39 @@ export default function NotificationBell() {
     setBusyId(null);
   };
 
+  // Dismiss a single system notification — deletes the row (needs the
+  // users_delete_own_notifications RLS policy). Optimistic: drop it immediately.
+  const dismissSystem = async (n) => {
+    setSystem((cur) => cur.filter((x) => x.id !== n.id));
+    const { error } = await supabase.from("notifications").delete().eq("id", n.id);
+    if (error) {
+      console.warn(
+        "[notifications] delete rejected — add the users_delete_own_notifications " +
+          "DELETE policy from supabase-rls.sql:",
+        error.message
+      );
+    }
+  };
+
+  // Clear everything: delete all system rows and advance the seen marker so
+  // informational follow rows drop out too. Pending requests intentionally stay.
+  const clearAll = async () => {
+    if (!user) return;
+    const ids = visibleSystem.map((n) => n.id);
+    const now = new Date().toISOString();
+    setSystem([]);
+    setSeenAt(now);
+    await Promise.all([
+      ids.length
+        ? supabase.from("notifications").delete().in("id", ids)
+        : Promise.resolve(),
+      supabase
+        .from("profiles")
+        .update({ notifications_seen_at: now })
+        .eq("id", user.id),
+    ]);
+  };
+
   if (!user) return null;
 
   return (
@@ -243,8 +286,16 @@ export default function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-line bg-card shadow-2xl">
-          <div className="border-b border-line px-4 py-3 text-sm font-medium text-fg">
-            Notifications
+          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <span className="text-sm font-medium text-fg">Notifications</span>
+            {items.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="mono text-xs text-muted transition-colors hover:text-fg"
+              >
+                Clear all
+              </button>
+            )}
           </div>
           <div className="max-h-[70vh] overflow-y-auto">
             {items.length === 0 ? (
@@ -268,6 +319,7 @@ export default function NotificationBell() {
                     key={item.key}
                     n={item.data}
                     unread={!item.data.is_read}
+                    onDismiss={dismissSystem}
                   />
                 )
               )
@@ -343,9 +395,9 @@ function FollowNotifRow({ n, unread, busy, onAccept, onDecline, onNavigate }) {
   );
 }
 
-function SystemNotifRow({ n, unread }) {
+function SystemNotifRow({ n, unread, onDismiss }) {
   return (
-    <div className="flex items-start gap-3 border-b border-line/60 px-4 py-3 last:border-b-0 hover:bg-white/5">
+    <div className="group flex items-start gap-3 border-b border-line/60 px-4 py-3 last:border-b-0 hover:bg-white/5">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-400">
         <svg
           width="18"
@@ -370,7 +422,16 @@ function SystemNotifRow({ n, unread }) {
           <span className="mono text-xs text-muted">{timeAgo(n.created_at)}</span>
         )}
       </div>
-      <UnreadDot show={unread} />
+      <div className="flex shrink-0 items-center gap-2">
+        <UnreadDot show={unread} />
+        <button
+          onClick={() => onDismiss?.(n)}
+          aria-label="Dismiss"
+          className="text-muted opacity-0 transition-opacity hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <X size={14} aria-hidden />
+        </button>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/AuthProvider";
 import { SPORTS } from "@/lib/constants";
 import { cleanText } from "@/lib/sanitize";
 import { Reveal } from "@/components/Reveal";
+import LocationPicker from "@/components/LocationPicker";
 
 async function geocodeLocation(location) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -26,6 +27,23 @@ async function geocodeLocation(location) {
   return { lng, lat, placeName: feature.place_name };
 }
 
+// Coordinates -> a human address, to fill the location field after a map click.
+async function reverseGeocode(lng, lat) {
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json` +
+        `?access_token=${token}&limit=1`
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.features?.[0]?.place_name || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function PostEventPage() {
   const router = useRouter();
   // Admin status is verified server-side via /api/admin/verify (through the auth
@@ -42,6 +60,7 @@ export default function PostEventPage() {
     max_players: 10,
     type: "casual",
   });
+  const [coords, setCoords] = useState(null); // { lng, lat } from the map picker
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -52,19 +71,61 @@ export default function PostEventPage() {
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  // Map click/drag -> set the coordinates and fill the address from reverse
+  // geocoding so the text field stays in sync with the pin.
+  const handlePick = async (c) => {
+    setCoords(c);
+    setError("");
+    const place = await reverseGeocode(c.lng, c.lat);
+    if (place) setForm((f) => ({ ...f, location: place }));
+  };
+
+  // "Find on map" -> geocode the typed address and drop the pin there.
+  const findOnMap = async () => {
+    const loc = cleanText(form.location, 120);
+    if (!loc) return;
+    setError("");
+    try {
+      const geo = await geocodeLocation(loc);
+      if (geo) {
+        setCoords({ lng: geo.lng, lat: geo.lat });
+        if (geo.placeName) setForm((f) => ({ ...f, location: geo.placeName }));
+      } else {
+        setError("Couldn’t find that address. Try another, or click the map.");
+      }
+    } catch {
+      setError("Geocoding failed. Click the map to set the location instead.");
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
       const location = cleanText(form.location, 120);
-      const geo = await geocodeLocation(location);
-      if (!geo) {
-        setError(
-          "Couldn’t find that location. Try a more specific address."
-        );
+      if (!location && !coords) {
+        setError("Add a location — type an address or click the map.");
         setSubmitting(false);
         return;
+      }
+
+      // Prefer the pin the admin dropped on the map; otherwise geocode the text.
+      let lat, lng;
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+      } else {
+        const geo = await geocodeLocation(location);
+        if (!geo) {
+          setError(
+            "Couldn’t find that address. Try a more specific one, or click the map."
+          );
+          setSubmitting(false);
+          return;
+        }
+        lat = geo.lat;
+        lng = geo.lng;
       }
 
       const { error: insErr } = await supabase.from("events").insert({
@@ -73,9 +134,9 @@ export default function PostEventPage() {
         description: cleanText(form.description, 1000) || null,
         date: form.date,
         time: form.time,
-        location,
-        latitude: geo.lat,
-        longitude: geo.lng,
+        location: location || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        latitude: lat,
+        longitude: lng,
         max_players: Number(form.max_players) || null,
         type: form.type,
         source: "admin",
@@ -198,16 +259,33 @@ export default function PostEventPage() {
 
         <div>
           <label className="field-label">Location</label>
-          <input
-            required
-            value={form.location}
-            onChange={update("location")}
-            className="field-input"
-            placeholder="Central Park, New York"
-          />
+          <div className="flex gap-2">
+            <input
+              value={form.location}
+              onChange={update("location")}
+              className="field-input"
+              placeholder="Central Park, New York"
+            />
+            <button
+              type="button"
+              onClick={findOnMap}
+              className="btn btn-muted shrink-0"
+            >
+              Find on map
+            </button>
+          </div>
           <p className="mono mt-1.5 text-xs text-muted">
-            Geocoded via Mapbox on submit.
+            Type an address and press “Find on map”, or click the map to drop the
+            pin.
           </p>
+          <div className="mt-2">
+            <LocationPicker value={coords} onChange={handlePick} />
+          </div>
+          {coords && (
+            <p className="mono mt-1.5 text-xs text-accent">
+              Pin set: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            </p>
+          )}
         </div>
 
         <div className="w-40">

@@ -1,10 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-// Dynamic [id] route is server-rendered on demand; Cloudflare Pages
-// (@cloudflare/next-on-pages) requires every non-static route to use edge.
-export const runtime = "edge";
-
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";

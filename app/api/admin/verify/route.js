@@ -1,8 +1,6 @@
 import { verifyAdmin } from "@/lib/supabaseServer";
 
-// Reads the Authorization header + talks to Supabase auth. Runs on the edge
-// runtime (required by Cloudflare Pages) and is never cached.
-export const runtime = "edge";
+// Reads the Authorization header + talks to Supabase auth. Never cached.
 export const dynamic = "force-dynamic";
 
 // GET /api/admin/verify — returns { isAdmin } for the caller, verified entirely

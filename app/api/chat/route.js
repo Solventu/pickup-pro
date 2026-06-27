@@ -2,9 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabaseClient";
 import { verifyUser } from "@/lib/supabaseServer";
 
-// Talks to the Anthropic API + Supabase. Runs on the edge runtime, required by
-// Cloudflare Pages (@cloudflare/next-on-pages). Never statically cached.
-export const runtime = "edge";
+// Talks to the Anthropic API + Supabase. Never statically cached.
 export const dynamic = "force-dynamic";
 
 const MODEL = "claude-sonnet-4-6";

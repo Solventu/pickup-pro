@@ -1,9 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyUser } from "@/lib/supabaseServer";
 
-// Uses the Anthropic API. Runs on the edge runtime (required by Cloudflare
-// Pages) and is never cached.
-export const runtime = "edge";
+// Uses the Anthropic API. Never cached.
 export const dynamic = "force-dynamic";
 
 const MODEL = "claude-sonnet-4-6";

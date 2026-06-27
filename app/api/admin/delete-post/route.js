@@ -1,7 +1,5 @@
 import { verifyAdmin, serviceClient } from "@/lib/supabaseServer";
 
-// Edge runtime is required by Cloudflare Pages (@cloudflare/next-on-pages).
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 // POST /api/admin/delete-post  body: { postId }

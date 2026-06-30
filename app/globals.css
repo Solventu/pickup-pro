@@ -445,9 +445,10 @@
 .filter-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
-  /* Vertical stays native (page scroll); horizontal gestures are delivered to
-     our pointer handlers so swiping the row works reliably on iOS. */
-  touch-action: pan-y;
+  /* Native horizontal swipe with momentum on touch; vertical still scrolls the
+     page. No custom JS runs on touch — this is a plain native scroller. */
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 .filter-scroll::-webkit-scrollbar {

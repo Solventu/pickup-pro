@@ -27,8 +27,9 @@ export default function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sport, setSport] = useState("All");
-  const [type, setType] = useState("All");
+  // Multi-select filters. Empty array = "All" (no restriction).
+  const [sports, setSports] = useState([]);
+  const [types, setTypes] = useState([]);
   const [page, setPage] = useState(1);
   const [joinBusyId, setJoinBusyId] = useState(null);
   const [showMap, setShowMap] = useState(false);
@@ -98,10 +99,13 @@ export default function HomePage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const sportSet = sports.map((s) => s.toLowerCase());
+    const typeSet = types.map((t) => t.toLowerCase());
     return events.filter((e) => {
-      if (sport !== "All" && (e.sport || "").toLowerCase() !== sport.toLowerCase())
+      // Empty set = no restriction; otherwise match ANY selected value.
+      if (sportSet.length && !sportSet.includes((e.sport || "").toLowerCase()))
         return false;
-      if (type !== "All" && (e.type || "").toLowerCase() !== type.toLowerCase())
+      if (typeSet.length && !typeSet.includes((e.type || "").toLowerCase()))
         return false;
       if (q) {
         const hay = `${e.sport || ""} ${e.location || ""} ${e.title || ""}`.toLowerCase();
@@ -109,11 +113,24 @@ export default function HomePage() {
       }
       return true;
     });
-  }, [events, search, sport, type]);
+  }, [events, search, sports, types]);
+
+  // Toggle a value in/out of a multi-select filter set.
+  const toggleIn = (setFn) => (value) =>
+    setFn((cur) =>
+      cur.includes(value) ? cur.filter((x) => x !== value) : [...cur, value]
+    );
+  const toggleSport = toggleIn(setSports);
+  const toggleType = toggleIn(setTypes);
+  const clearFilters = () => {
+    setSports([]);
+    setTypes([]);
+  };
+  const hasFilters = sports.length > 0 || types.length > 0;
 
   useEffect(() => {
     setPage(1);
-  }, [search, sport, type]);
+  }, [search, sports, types]);
 
   // Reveal the map (if hidden), scroll to it, and fly to an event. Retries until
   // MapView has mounted and exposed its flyTo handler. Shared by event-card "Map"
@@ -341,29 +358,47 @@ export default function HomePage() {
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
-          {/* Sports: a single draggable row — scroll/drag left↔right to reach any
-              sport. New entries in SPORTS just extend the bar. */}
+          {/* Sports: a single swipeable row. Multi-select — tap several sports to
+              combine them. "All" clears the row. New entries in SPORTS extend it. */}
           <DragScroll>
-            {SPORT_FILTERS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSport(s)}
-                className={`pill shrink-0 ${sport === s ? "pill-active" : ""}`}
-              >
-                {s}
-              </button>
-            ))}
+            {SPORT_FILTERS.map((s) => {
+              const isAll = s === "All";
+              const active = isAll ? sports.length === 0 : sports.includes(s);
+              return (
+                <button
+                  key={s}
+                  onClick={() => (isAll ? setSports([]) : toggleSport(s))}
+                  aria-pressed={active}
+                  className={`pill shrink-0 ${active ? "pill-active" : ""}`}
+                >
+                  {s}
+                </button>
+              );
+            })}
           </DragScroll>
-          <div className="flex flex-wrap gap-2">
-            {TYPE_FILTERS.map((t) => (
+          <div className="flex flex-wrap items-center gap-2">
+            {TYPE_FILTERS.map((t) => {
+              const isAll = t === "All";
+              const active = isAll ? types.length === 0 : types.includes(t);
+              return (
+                <button
+                  key={t}
+                  onClick={() => (isAll ? setTypes([]) : toggleType(t))}
+                  aria-pressed={active}
+                  className={`pill ${active ? "pill-active" : ""}`}
+                >
+                  {t}
+                </button>
+              );
+            })}
+            {hasFilters && (
               <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`pill ${type === t ? "pill-active" : ""}`}
+                onClick={clearFilters}
+                className="mono ml-1 text-xs text-muted underline-offset-2 transition-colors hover:text-fg hover:underline"
               >
-                {t}
+                Clear filters
               </button>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -394,7 +429,7 @@ export default function HomePage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            key={`${safePage}-${sport}-${type}-${search}`}
+            key={`${safePage}-${sports.join(",")}-${types.join(",")}-${search}`}
           >
             {pageItems.map((e) => (
               <motion.div
@@ -464,73 +499,61 @@ export default function HomePage() {
   );
 }
 
-// Horizontally scrollable filter row. Scrolls natively on touch; on desktop you
-// can click-and-drag the row left↔right to reach off-screen pills, or drag the
-// always-visible bar underneath. A drag is suppressed from firing a pill's click
-// so you don't accidentally select while scrolling.
+// Horizontally scrollable filter row.
+//  • Touch (phones/tablets): pure native horizontal scroll with momentum — just
+//    swipe a finger across the pills. We don't run any JS on touch, so it feels
+//    exactly like a native scroller. `data-lenis-prevent` keeps the page's
+//    smooth-scroll (Lenis) from swallowing the gesture.
+//  • Desktop (mouse): click-and-drag the row left↔right, since there's no touch
+//    swipe. Mouse-only — guarded by pointerType so it never interferes on touch.
+// A mouse drag is suppressed from firing a pill's click so you don't accidentally
+// select while dragging.
 function DragScroll({ children }) {
   const ref = useRef(null);
-  const drag = useRef({ down: false, startX: 0, scroll: 0, moved: false });
-  const [thumb, setThumb] = useState({ width: 0, left: 0, show: false });
+  const drag = useRef({ down: false, startX: 0, scroll: 0, moved: false, captured: false });
 
-  // Size + position the custom bar from the row's scroll metrics.
-  const updateThumb = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    const { scrollWidth, clientWidth, scrollLeft } = el;
-    const show = scrollWidth > clientWidth + 1;
-    setThumb({
-      show,
-      width: show ? (clientWidth / scrollWidth) * 100 : 100,
-      left: show ? (scrollLeft / scrollWidth) * 100 : 0,
-    });
-  }, []);
-
-  useEffect(() => {
-    updateThumb();
-    const el = ref.current;
-    if (!el) return;
-    el.addEventListener("scroll", updateThumb, { passive: true });
-    window.addEventListener("resize", updateThumb);
-    return () => {
-      el.removeEventListener("scroll", updateThumb);
-      window.removeEventListener("resize", updateThumb);
-    };
-  }, [updateThumb]);
-
-  // Drag the pill row itself. Pointer events cover mouse AND touch, so this is
-  // what makes horizontal swiping work on iOS — `touch-action: pan-y` lets the
-  // browser keep vertical page scroll while delivering horizontal moves to us.
   const onDown = (e) => {
+    if (e.pointerType !== "mouse") return; // touch = native scroll
     const el = ref.current;
     if (!el) return;
+    // NOTE: do NOT capture the pointer here — capturing on pointerdown retargets
+    // events to this container and swallows the child button's click, breaking
+    // selection. We capture later, only once a real drag begins.
     drag.current = {
       down: true,
       startX: e.clientX,
       scroll: el.scrollLeft,
       moved: false,
+      captured: false,
     };
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {}
   };
   const onMove = (e) => {
+    if (e.pointerType !== "mouse") return;
     const el = ref.current;
     if (!el || !drag.current.down) return;
     const dx = e.clientX - drag.current.startX;
-    if (Math.abs(dx) > 4) drag.current.moved = true;
-    el.scrollLeft = drag.current.scroll - dx;
+    if (Math.abs(dx) > 4 && !drag.current.moved) {
+      drag.current.moved = true;
+      // Now it's a genuine drag — capture so it keeps tracking off the row.
+      try {
+        el.setPointerCapture(e.pointerId);
+        drag.current.captured = true;
+      } catch {}
+    }
+    if (drag.current.moved) el.scrollLeft = drag.current.scroll - dx;
   };
   const stop = (e) => {
     const el = ref.current;
-    if (el && e?.pointerId != null) {
+    if (el && drag.current.captured && e?.pointerId != null) {
       try {
         el.releasePointerCapture(e.pointerId);
       } catch {}
     }
     drag.current.down = false;
+    drag.current.captured = false;
   };
-  // Swallow the click that fires right after a drag so it doesn't select a pill.
+  // Swallow the click that fires right after a mouse drag so it doesn't select a
+  // pill. Taps (touch) never set `moved`, so tapping a sport still selects it.
   const onClickCapture = (e) => {
     if (drag.current.moved) {
       e.preventDefault();
@@ -539,48 +562,18 @@ function DragScroll({ children }) {
     }
   };
 
-  // Drag the bar's thumb — maps pointer movement onto scrollLeft (mouse + touch).
-  const onThumbDown = (e) => {
-    e.preventDefault();
-    const el = ref.current;
-    if (!el) return;
-    const startX = e.clientX;
-    const startScroll = el.scrollLeft;
-    const ratio = el.scrollWidth / el.clientWidth;
-    const onMoveWin = (ev) => {
-      el.scrollLeft = startScroll + (ev.clientX - startX) * ratio;
-    };
-    const onUpWin = () => {
-      window.removeEventListener("pointermove", onMoveWin);
-      window.removeEventListener("pointerup", onUpWin);
-    };
-    window.addEventListener("pointermove", onMoveWin);
-    window.addEventListener("pointerup", onUpWin);
-  };
-
   return (
-    <div>
-      <div
-        ref={ref}
-        data-lenis-prevent
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={stop}
-        onPointerCancel={stop}
-        onClickCapture={onClickCapture}
-        className="filter-scroll flex cursor-grab gap-2 overflow-x-auto py-1 active:cursor-grabbing"
-      >
-        {children}
-      </div>
-      {thumb.show && (
-        <div className="relative mt-2 h-1.5 w-full rounded-full bg-line/70">
-          <div
-            onPointerDown={onThumbDown}
-            className="absolute top-0 h-full cursor-grab rounded-full bg-accent/60 transition-colors hover:bg-accent active:cursor-grabbing"
-            style={{ width: `${thumb.width}%`, left: `${thumb.left}%` }}
-          />
-        </div>
-      )}
+    <div
+      ref={ref}
+      data-lenis-prevent
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={stop}
+      onPointerCancel={stop}
+      onClickCapture={onClickCapture}
+      className="filter-scroll flex gap-2 overflow-x-auto py-1 md:cursor-grab md:active:cursor-grabbing"
+    >
+      {children}
     </div>
   );
 }

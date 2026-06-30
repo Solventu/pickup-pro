@@ -34,7 +34,8 @@ export default function Navbar() {
     setOpen(false);
   }, [pathname]);
 
-  // Close on outside click
+  // Close on outside click or scroll. The menu is anchored to the sticky navbar,
+  // so leaving it open on scroll would otherwise float fixed at the top.
   useEffect(() => {
     if (!open) return;
     const onDown = (e) => {
@@ -47,8 +48,13 @@ export default function Navbar() {
         setOpen(false);
       }
     };
+    const onScroll = () => setOpen(false);
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [open]);
 
   const handleLogout = async () => {

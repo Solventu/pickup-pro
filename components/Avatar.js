@@ -11,7 +11,7 @@ export default function Avatar({
   ring = false,
 }) {
   const dim = { width: size, height: size };
-  const ringCls = ring ? "ring-2 ring-accent/40" : "";
+  const ringCls = ring ? "ring-1 ring-white/10 shadow-lg shadow-black/30" : "";
 
   const inner = avatarUrl ? (
     <img

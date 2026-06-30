@@ -223,11 +223,6 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       {/* Header */}
       <Reveal className="card relative flex flex-col gap-5 overflow-hidden p-6 sm:flex-row sm:items-center">
-        {/* Soft accent glow behind the avatar */}
-        <div
-          className="pointer-events-none absolute -left-12 -top-16 h-48 w-48 rounded-full bg-accent/15 blur-3xl"
-          aria-hidden
-        />
         <Avatar
           username={profile.username}
           avatarUrl={profile.avatar_url}

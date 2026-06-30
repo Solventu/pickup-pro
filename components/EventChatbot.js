@@ -98,8 +98,16 @@ export default function EventChatbot() {
   const [messages, setMessages] = useState([{ ...WELCOME, ts: "" }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0); // seconds left before next send
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Tick the send cooldown down to zero once per second while it's active.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
 
   // Slide-up animation: mount, then transition to the shown state next tick.
   useEffect(() => {
@@ -136,13 +144,14 @@ export default function EventChatbot() {
   const send = async (e) => {
     e?.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || cooldown > 0) return;
 
     const userMsg = { role: "user", content: text, ts: now() };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
     setLoading(true);
+    setCooldown(30); // rate limit: one message every 30 seconds
 
     // Send the last 10 real turns (drop the canned welcome) for context.
     const history = next
@@ -268,12 +277,16 @@ export default function EventChatbot() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about sports events..."
+              placeholder={cooldown > 0 ? `Please wait ${cooldown}s…` : "Ask about sports events..."}
               className="field-input flex-1"
-              disabled={loading}
+              disabled={loading || cooldown > 0}
             />
-            <button type="submit" disabled={loading || !input.trim()} className="btn btn-primary shrink-0">
-              Send
+            <button
+              type="submit"
+              disabled={loading || cooldown > 0 || !input.trim()}
+              className="btn btn-primary shrink-0"
+            >
+              {cooldown > 0 ? `${cooldown}s` : "Send"}
             </button>
           </form>
         </div>

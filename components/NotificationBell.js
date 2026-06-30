@@ -145,8 +145,15 @@ export default function NotificationBell() {
     const onDown = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
+    // Close on scroll — the panel is anchored to the sticky navbar, so leaving it
+    // open would otherwise float fixed at the top of the screen.
+    const onScroll = () => setOpen(false);
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [open]);
 
   // Unread is decided purely from the DB. Follows count as unread when they

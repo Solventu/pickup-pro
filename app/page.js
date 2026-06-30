@@ -244,17 +244,17 @@ export default function HomePage() {
           />
 
           {/* Content */}
-          <div className="relative z-[2] flex min-h-[360px] flex-col justify-center px-6 py-8 sm:min-h-[540px] sm:px-12 sm:py-12">
+          <div className="relative z-[2] flex min-h-[clamp(240px,40vw,540px)] flex-col justify-center px-[clamp(1.5rem,5vw,3rem)] py-[clamp(1.75rem,5vw,3rem)]">
             <motion.div
               variants={rise}
-              className="mono mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent"
+              className="mono mb-[clamp(0.625rem,2vw,1rem)] flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-accent"
             >
               <span className="live-dot" aria-hidden />
               Worldwide · Live now
             </motion.div>
             <motion.h1
               variants={rise}
-              className="text-5xl font-bold leading-[0.95] tracking-tight sm:text-7xl"
+              className="text-[clamp(2.25rem,8vw,4.5rem)] font-bold leading-[0.95] tracking-tight"
             >
               FIND YOUR
               <br />
@@ -262,14 +262,14 @@ export default function HomePage() {
             </motion.h1>
             <motion.p
               variants={rise}
-              className="mt-5 max-w-xl text-base text-muted sm:text-lg"
+              className="mt-[clamp(0.75rem,2vw,1.25rem)] max-w-xl text-[clamp(0.875rem,1.6vw,1.125rem)] text-muted"
             >
               Discover pickup games happening around the city, join casual
               matches, and register for official events — all on one map.
             </motion.p>
 
             {/* Live count badges */}
-            <motion.div variants={rise} className="mt-7 flex flex-wrap gap-3">
+            <motion.div variants={rise} className="mt-[clamp(1.25rem,3vw,1.75rem)] flex flex-wrap gap-3">
               <StatBadge label="Total events" value={totalCount} dot="#e8e8f2" />
               <StatBadge label="Casual" value={casualCount} dot="#22c55e" />
               <StatBadge label="Official" value={officialCount} dot="#fb923c" />

@@ -65,11 +65,16 @@ export default function UserSearch() {
     const onKey = (e) => {
       if (e.key === "Escape") setOpen(false);
     };
+    // Close on scroll — the dropdown is anchored to the sticky navbar, so left
+    // open it would otherwise float fixed at the top of the screen.
+    const onScroll = () => setOpen(false);
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [open]);
 

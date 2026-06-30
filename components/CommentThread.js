@@ -86,7 +86,7 @@ export default function CommentThread({ postId, currentUser, onCountChange }) {
                       href={author.id ? `/athletes/${author.id}` : "#"}
                       className="text-sm font-medium text-fg hover:text-accent"
                     >
-                      @{author.username || "unknown"}
+                      {author.username || "unknown"}
                     </Link>
                     <span className="mono text-[0.65rem] text-muted">
                       {timeAgo(c.created_at)}

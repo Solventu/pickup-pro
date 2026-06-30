@@ -110,7 +110,7 @@ export default function Navbar() {
                 href={profileHref}
                 className="mono max-w-[10rem] truncate text-sm text-fg hover:text-accent"
               >
-                @{username}
+                {username}
               </Link>
               <button onClick={handleLogout} className="btn btn-muted">
                 Logout
@@ -210,7 +210,7 @@ export default function Navbar() {
                 </Link>
                 <div className="mono px-3 py-2 text-sm text-muted">
                   Signed in as{" "}
-                  <span className="text-fg">@{username}</span>
+                  <span className="text-fg">{username}</span>
                 </div>
                 <button
                   onClick={handleLogout}

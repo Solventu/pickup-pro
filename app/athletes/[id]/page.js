@@ -250,7 +250,7 @@ export default function ProfilePage() {
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">
-              @{profile.username || "unknown"}
+              {profile.username || "unknown"}
             </h1>
             {profile.is_private && (
               <span className="badge badge-sport">
@@ -409,7 +409,7 @@ export default function ProfilePage() {
       <ImageLightbox
         open={avatarOpen}
         src={profile.avatar_url}
-        alt={`@${profile.username || "user"} profile photo`}
+        alt={`${profile.username || "user"} profile photo`}
         onClose={() => setAvatarOpen(false)}
       />
     </div>

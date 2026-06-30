@@ -369,7 +369,7 @@ function FollowNotifRow({ n, unread, busy, onAccept, onDecline, onNavigate }) {
             onClick={onNavigate}
             className="font-medium hover:text-accent"
           >
-            @{actor.username || "someone"}
+            {actor.username || "someone"}
           </Link>{" "}
           <span className="text-muted">
             {isPending ? "requested to follow you" : "started following you"}

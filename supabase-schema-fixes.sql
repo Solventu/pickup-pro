@@ -38,3 +38,18 @@ alter table post_comments add  constraint post_comments_post_id_fkey
 alter table athlete_posts add column if not exists location  text;
 alter table athlete_posts add column if not exists latitude  double precision;
 alter table athlete_posts add column if not exists longitude double precision;
+
+-- ========================================================================
+-- Unique usernames, case-insensitive. Two accounts can't share a username
+-- regardless of casing ("Alex" == "alex"). NULL usernames are allowed and don't
+-- collide (Postgres treats NULLs as distinct in a unique index).
+--
+-- IMPORTANT: if duplicate usernames already exist, creating this index FAILS —
+-- resolve the duplicates first, e.g.:
+--   select lower(username), count(*) from profiles
+--   where username is not null group by 1 having count(*) > 1;
+-- The app also enforces this (signup + edit profile), but the DB index is the
+-- real guarantee against races. Safe to re-run.
+-- ========================================================================
+create unique index if not exists profiles_username_lower_unique
+  on profiles (lower(username));

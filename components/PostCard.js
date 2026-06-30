@@ -155,7 +155,7 @@ export default function PostCard({
             href={authorHref}
             className="truncate text-sm font-medium text-fg hover:text-accent"
           >
-            @{author.username || "unknown"}
+            {author.username || "unknown"}
           </Link>
           {post.sport && (
             <span className="badge badge-sport shrink-0">{post.sport}</span>
@@ -296,7 +296,7 @@ export default function PostCard({
                 href={`/athletes/${u.id}`}
                 className="font-medium text-fg hover:text-accent"
               >
-                @{u.username || "user"}
+                {u.username || "user"}
               </Link>
             </span>
           ))}

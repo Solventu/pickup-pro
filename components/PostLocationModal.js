@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { X, MapPin, Plus, Minus } from "lucide-react";
@@ -98,9 +99,11 @@ export default function PostLocationModal({ open, onClose, post }) {
     };
   }, [open, coords]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Portal to <body> so the fixed overlay isn't positioned relative to the
+  // transformed post card (framer-motion), which made it flash mis-placed.
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.75)" }}
@@ -160,6 +163,7 @@ export default function PostLocationModal({ open, onClose, post }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

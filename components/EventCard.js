@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Calendar, MapPin, ExternalLink } from "lucide-react";
 import { formatDate, formatTime, hasValidCoords } from "@/lib/helpers";
 import ProgressBar from "./ProgressBar";
+import EventParticipantsModal from "./EventParticipantsModal";
 
 export default function EventCard({
   event,
@@ -12,10 +15,13 @@ export default function EventCard({
   onMapClick,
   isLoggedIn = false,
   busy = false,
+  currentUser = null,
 }) {
   const isOfficial = event.type === "official";
   const max = event.max_players ?? 0;
   const full = max > 0 && count >= max && !joined;
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const going = event.participants_followed || [];
 
   const renderActionButton = () => {
     // Official events with an external registration link
@@ -62,7 +68,7 @@ export default function EventCard({
   };
 
   return (
-    <div className="card card-hover flex flex-col gap-3 p-5">
+    <div className="card card-hover flex h-full flex-col gap-3 p-5">
       {/* Badges */}
       <div className="flex items-center gap-2">
         {event.sport && <span className="badge badge-sport">{event.sport}</span>}
@@ -89,17 +95,53 @@ export default function EventCard({
         )}
       </div>
 
-      {/* Players progress */}
+      {/* Players progress — count opens the full participant list. */}
       <div className="mt-1 flex flex-col gap-1.5">
         <div className="mono flex items-center justify-between text-xs">
           <span className="text-muted">Players</span>
-          <span className="text-fg">
+          <button
+            onClick={() => count > 0 && setParticipantsOpen(true)}
+            disabled={count === 0}
+            className={
+              count > 0 ? "text-fg hover:text-accent hover:underline" : "text-fg"
+            }
+          >
             {count}
             {max ? ` / ${max}` : ""}
-          </span>
+          </button>
         </div>
         <ProgressBar value={count} max={max} />
       </div>
+
+      {/* "Going" — accounts you follow who joined this event. */}
+      {going.length > 0 && (
+        <p className="text-xs text-muted">
+          Going:{" "}
+          {going.slice(0, 2).map((u, i) => (
+            <span key={u.id}>
+              {i > 0 && ", "}
+              <Link
+                href={`/athletes/${u.id}`}
+                className="font-medium text-fg hover:text-accent"
+              >
+                {u.username || "user"}
+              </Link>
+            </span>
+          ))}
+          {going.length > 2 && (
+            <>
+              {" "}
+              and{" "}
+              <button
+                onClick={() => setParticipantsOpen(true)}
+                className="font-medium text-fg hover:text-accent"
+              >
+                {going.length - 2} other{going.length - 2 === 1 ? "" : "s"}
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       {/* Actions */}
       <div className="mt-2 flex items-center gap-2">
@@ -114,6 +156,13 @@ export default function EventCard({
         )}
         {renderActionButton()}
       </div>
+
+      <EventParticipantsModal
+        open={participantsOpen}
+        eventId={event.id}
+        currentUser={currentUser}
+        onClose={() => setParticipantsOpen(false)}
+      />
     </div>
   );
 }

@@ -49,6 +49,9 @@ export default function HomePage() {
 
     const counts = {};
     const joinedSet = new Set();
+    // Per-event lists of the user_ids that joined, so we can surface the ones the
+    // viewer follows ("Going: …") the same way posts show "Liked by …".
+    const participantsByEvent = {};
     if (ids.length) {
       const { data: parts } = await supabase
         .from("event_participants")
@@ -57,6 +60,49 @@ export default function HomePage() {
       (parts || []).forEach((p) => {
         counts[p.event_id] = (counts[p.event_id] || 0) + 1;
         if (user && p.user_id === user.id) joinedSet.add(p.event_id);
+        (participantsByEvent[p.event_id] ||= []).push(p.user_id);
+      });
+    }
+
+    // "Going" highlight: accounts the viewer follows (accepted) who joined, with
+    // their profile for display — mirrors liked_by_followed in lib/posts.js.
+    const followedByEvent = {};
+    if (user && ids.length) {
+      const { data: fl } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user.id)
+        .eq("status", "accepted");
+      const followedSet = new Set(
+        (fl || []).map((f) => f.following_id).filter((fid) => fid && fid !== user.id)
+      );
+      if (followedSet.size) {
+        const followedIds = new Set();
+        Object.values(participantsByEvent).forEach((uids) =>
+          uids.forEach((uid) => followedSet.has(uid) && followedIds.add(uid))
+        );
+        const profById = {};
+        if (followedIds.size) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id,username,avatar_url")
+            .in("id", [...followedIds]);
+          (profs || []).forEach((p) => (profById[p.id] = p));
+        }
+        Object.entries(participantsByEvent).forEach(([eid, uids]) => {
+          const going = uids
+            .filter((uid) => followedSet.has(uid))
+            .map((uid) => profById[uid])
+            .filter(Boolean);
+          if (going.length) followedByEvent[eid] = going;
+        });
+      }
+      // TEMP DEBUG — remove after diagnosing the missing "Going:" line.
+      // eslint-disable-next-line no-console
+      console.log("[GOING DEBUG]", {
+        loggedIn: !!user,
+        acceptedFollows: followedSet.size,
+        eventsWithFollowedAttendee: Object.keys(followedByEvent).length,
       });
     }
 
@@ -65,6 +111,7 @@ export default function HomePage() {
         ...e,
         count: counts[e.id] ?? 0,
         joined: joinedSet.has(e.id),
+        participants_followed: followedByEvent[e.id] || [],
       }))
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -443,6 +490,7 @@ export default function HomePage() {
                   count={e.count}
                   joined={e.joined}
                   isLoggedIn={!!user}
+                  currentUser={user}
                   busy={joinBusyId === e.id}
                   onMapClick={handleMapClick}
                   onToggleJoin={handleToggleJoin}

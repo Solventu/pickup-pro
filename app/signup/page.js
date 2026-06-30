@@ -96,9 +96,20 @@ export default function SignupPage() {
 
     // If we have a session, create/sync the profile row now.
     if (data.session && data.user) {
-      await supabase
+      const { error: profErr } = await supabase
         .from("profiles")
         .upsert({ id: data.user.id, username: username.trim(), is_private: false });
+      if (profErr) {
+        setSubmitting(false);
+        // 23505 = unique violation: the username was taken between the check and
+        // now (case-insensitive DB index). Surface it clearly.
+        setError(
+          profErr.code === "23505"
+            ? "This username is already taken."
+            : profErr.message
+        );
+        return;
+      }
       setSubmitting(false);
       router.push("/");
       router.refresh();
@@ -136,21 +147,16 @@ export default function SignupPage() {
           <label className="field-label" htmlFor="username">
             Username
           </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-              @
-            </span>
-            <input
-              id="username"
-              type="text"
-              required
-              autoComplete="off"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="yourhandle"
-              className="field-input pl-7"
-            />
-          </div>
+          <input
+            id="username"
+            type="text"
+            required
+            autoComplete="off"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourhandle"
+            className="field-input"
+          />
           <p className={`mono mt-1.5 flex items-center gap-1 text-xs ${usernameHint.cls}`}>
             {usernameHint.icon}
             {usernameHint.text}

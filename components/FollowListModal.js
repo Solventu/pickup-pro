@@ -241,7 +241,7 @@ export default function FollowListModal({
                           size={40}
                         />
                         <span className="min-w-0 flex-1 text-sm text-fg">
-                          Remove @{row.username || "user"} from followers?
+                          Remove {row.username || "user"} from followers?
                         </span>
                         <div className="flex shrink-0 gap-2">
                           <button
@@ -272,7 +272,7 @@ export default function FollowListModal({
                             size={40}
                           />
                           <span className="truncate font-medium text-fg">
-                            @{row.username || "unknown"}
+                            {row.username || "unknown"}
                           </span>
                         </button>
 

@@ -213,7 +213,7 @@ export default function UserSearch() {
                       size={40}
                     />
                     <span className="truncate font-medium text-fg">
-                      @{row.username || "unknown"}
+                      {row.username || "unknown"}
                     </span>
                   </button>
                   <FollowButton

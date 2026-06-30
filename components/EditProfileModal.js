@@ -73,7 +73,7 @@ export default function EditProfileModal({ open, onClose, profile, onSaved }) {
           .neq("id", profile.id)
           .limit(1);
         if (taken && taken.length) {
-          setError("Username already taken.");
+          setError("This username is already taken.");
           setSaving(false);
           return;
         }
@@ -104,7 +104,16 @@ export default function EditProfileModal({ open, onClose, profile, onSaved }) {
         .from("profiles")
         .update(updates)
         .eq("id", profile.id);
-      if (updErr) throw updErr;
+      if (updErr) {
+        // 23505 = unique violation on the case-insensitive username index (a race
+        // past the check above). Show the same friendly message.
+        if (updErr.code === "23505") {
+          setError("This username is already taken.");
+          setSaving(false);
+          return;
+        }
+        throw updErr;
+      }
 
       onSaved?.({ ...profile, ...updates });
       onClose?.();

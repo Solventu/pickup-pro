@@ -498,20 +498,36 @@ function DragScroll({ children }) {
     };
   }, [updateThumb]);
 
-  // Drag the pill row itself.
+  // Drag the pill row itself. Pointer events cover mouse AND touch, so this is
+  // what makes horizontal swiping work on iOS — `touch-action: pan-y` lets the
+  // browser keep vertical page scroll while delivering horizontal moves to us.
   const onDown = (e) => {
     const el = ref.current;
     if (!el) return;
-    drag.current = { down: true, startX: e.pageX, scroll: el.scrollLeft, moved: false };
+    drag.current = {
+      down: true,
+      startX: e.clientX,
+      scroll: el.scrollLeft,
+      moved: false,
+    };
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {}
   };
   const onMove = (e) => {
     const el = ref.current;
     if (!el || !drag.current.down) return;
-    const dx = e.pageX - drag.current.startX;
+    const dx = e.clientX - drag.current.startX;
     if (Math.abs(dx) > 4) drag.current.moved = true;
     el.scrollLeft = drag.current.scroll - dx;
   };
-  const stop = () => {
+  const stop = (e) => {
+    const el = ref.current;
+    if (el && e?.pointerId != null) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
     drag.current.down = false;
   };
   // Swallow the click that fires right after a drag so it doesn't select a pill.
@@ -523,23 +539,23 @@ function DragScroll({ children }) {
     }
   };
 
-  // Drag the bar's thumb — maps pointer movement onto scrollLeft.
+  // Drag the bar's thumb — maps pointer movement onto scrollLeft (mouse + touch).
   const onThumbDown = (e) => {
     e.preventDefault();
     const el = ref.current;
     if (!el) return;
-    const startX = e.pageX;
+    const startX = e.clientX;
     const startScroll = el.scrollLeft;
     const ratio = el.scrollWidth / el.clientWidth;
     const onMoveWin = (ev) => {
-      el.scrollLeft = startScroll + (ev.pageX - startX) * ratio;
+      el.scrollLeft = startScroll + (ev.clientX - startX) * ratio;
     };
     const onUpWin = () => {
-      window.removeEventListener("mousemove", onMoveWin);
-      window.removeEventListener("mouseup", onUpWin);
+      window.removeEventListener("pointermove", onMoveWin);
+      window.removeEventListener("pointerup", onUpWin);
     };
-    window.addEventListener("mousemove", onMoveWin);
-    window.addEventListener("mouseup", onUpWin);
+    window.addEventListener("pointermove", onMoveWin);
+    window.addEventListener("pointerup", onUpWin);
   };
 
   return (
@@ -547,10 +563,10 @@ function DragScroll({ children }) {
       <div
         ref={ref}
         data-lenis-prevent
-        onMouseDown={onDown}
-        onMouseMove={onMove}
-        onMouseUp={stop}
-        onMouseLeave={stop}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={stop}
+        onPointerCancel={stop}
         onClickCapture={onClickCapture}
         className="filter-scroll flex cursor-grab gap-2 overflow-x-auto py-1 active:cursor-grabbing"
       >
@@ -559,7 +575,7 @@ function DragScroll({ children }) {
       {thumb.show && (
         <div className="relative mt-2 h-1.5 w-full rounded-full bg-line/70">
           <div
-            onMouseDown={onThumbDown}
+            onPointerDown={onThumbDown}
             className="absolute top-0 h-full cursor-grab rounded-full bg-accent/60 transition-colors hover:bg-accent active:cursor-grabbing"
             style={{ width: `${thumb.width}%`, left: `${thumb.left}%` }}
           />

@@ -445,6 +445,11 @@
 .filter-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Allow native horizontal swipe on touch (and let vertical gestures scroll the
+     page) instead of the gesture being swallowed. */
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .filter-scroll::-webkit-scrollbar {
   display: none;

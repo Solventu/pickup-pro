@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { SPORTS, POST_IMAGES_BUCKET } from "@/lib/constants";
 import { validateImageFile, randomImageName } from "@/lib/upload";
 import { cleanText, LIMITS } from "@/lib/sanitize";
+import { reverseGeocode } from "@/lib/geocode";
 import Avatar from "./Avatar";
 import ImageCropModal from "./ImageCropModal";
 import LocationPicker from "./LocationPicker";
@@ -82,6 +83,15 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
     setFile(null);
     setPreview("");
     if (fileRef.current) fileRef.current.value = "";
+  };
+
+  // Pin dropped/moved on the map -> store the coords and auto-fill the place
+  // name from reverse geocoding so the input reflects the picked spot. The user
+  // can still edit the text afterwards.
+  const handlePickLocation = async (c) => {
+    setCoords(c);
+    const place = await reverseGeocode(c.lng, c.lat);
+    if (place) setLocation(place.slice(0, MAX_LOCATION));
   };
 
   const submit = async (e) => {
@@ -233,7 +243,7 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
               <X size={15} aria-hidden />
             </button>
           </div>
-          <LocationPicker value={coords} onChange={setCoords} />
+          <LocationPicker value={coords} onChange={handlePickLocation} />
           <p className="mono text-[0.7rem] text-muted">
             {coords
               ? "Pin set — others can open it on the map."

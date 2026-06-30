@@ -13,6 +13,7 @@ import CommentThread from "./CommentThread";
 import AdminDeletePost from "./AdminDeletePost";
 import Modal from "./Modal";
 import LikesModal from "./LikesModal";
+import PostLocationModal from "./PostLocationModal";
 
 function HeartIcon({ filled }) {
   return (
@@ -65,8 +66,11 @@ export default function PostCard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [likesOpen, setLikesOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
   const menuRef = useRef(null);
   const followedLikers = post.liked_by_followed || [];
+  const hasLocation =
+    !!post.location || (post.latitude != null && post.longitude != null);
 
   const { isAdmin } = useAuth();
   const author = post.author || {};
@@ -220,26 +224,18 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Location — opens the pin (or place name) on Google Maps so anyone can
-          find it. Coordinates are used when the author dropped a pin. */}
-      {(post.location || (post.latitude != null && post.longitude != null)) && (
-        <a
-          href={
-            post.latitude != null && post.longitude != null
-              ? `https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`
-              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  post.location
-                )}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
+      {/* Location — opens an in-app map with a pin (no external redirect). */}
+      {hasLocation && (
+        <button
+          type="button"
+          onClick={() => setLocationOpen(true)}
           className="mt-2 flex w-fit items-center gap-1.5 text-xs text-muted transition-colors hover:text-accent"
         >
           <MapPin size={12} aria-hidden />
           <span className="underline-offset-2 hover:underline">
             {post.location || "View location on map"}
           </span>
-        </a>
+        </button>
       )}
 
       {/* Event tag */}
@@ -366,6 +362,15 @@ export default function PostCard({
         postId={post.id}
         onClose={() => setLikesOpen(false)}
       />
+
+      {/* In-app location map */}
+      {hasLocation && (
+        <PostLocationModal
+          open={locationOpen}
+          post={post}
+          onClose={() => setLocationOpen(false)}
+        />
+      )}
     </article>
   );
 }

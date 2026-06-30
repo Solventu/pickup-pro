@@ -546,6 +546,7 @@ function DragScroll({ children }) {
     <div>
       <div
         ref={ref}
+        data-lenis-prevent
         onMouseDown={onDown}
         onMouseMove={onMove}
         onMouseUp={stop}

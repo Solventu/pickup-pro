@@ -23,7 +23,7 @@ const rise = {
 };
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -97,13 +97,6 @@ export default function HomePage() {
           if (going.length) followedByEvent[eid] = going;
         });
       }
-      // TEMP DEBUG — remove after diagnosing the missing "Going:" line.
-      // eslint-disable-next-line no-console
-      console.log("[GOING DEBUG]", {
-        loggedIn: !!user,
-        acceptedFollows: followedSet.size,
-        eventsWithFollowedAttendee: Object.keys(followedByEvent).length,
-      });
     }
 
     setEvents(
@@ -251,6 +244,10 @@ export default function HomePage() {
   }, [totalPages, safePage]);
 
   const handleMapClick = (event) => flyToEvent(event);
+
+  // Admin deleted an event — drop it from the list immediately.
+  const handleEventDeleted = (id) =>
+    setEvents((es) => es.filter((e) => e.id !== id));
 
   const handleToggleJoin = async (event, join) => {
     if (!user) return;
@@ -491,9 +488,11 @@ export default function HomePage() {
                   joined={e.joined}
                   isLoggedIn={!!user}
                   currentUser={user}
+                  isAdmin={isAdmin}
                   busy={joinBusyId === e.id}
                   onMapClick={handleMapClick}
                   onToggleJoin={handleToggleJoin}
+                  onDeleted={handleEventDeleted}
                 />
               </motion.div>
             ))}

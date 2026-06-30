@@ -126,11 +126,14 @@ drop policy if exists "events_insert_admin" on events;
 create policy "events_insert_admin" on events
   for insert with check (auth.uid() = '2058520b-09cb-4311-999a-d97e971d22b1');
 
--- NOTE: there are intentionally NO update/delete policies on events. With RLS
--- enabled, anon/authenticated users therefore cannot UPDATE or DELETE events at
--- all — only the service_role key (which bypasses RLS, used by trusted server
--- code) can. INSERT stays restricted to the admin UID so /post-event keeps
--- working without a service key.
+-- Only the admin UID can delete events (moderation / cleanup). The admin UID is a
+-- server-side literal here (RLS runs inside Postgres); it is never shipped to the
+-- browser. This lets /api/admin/delete-event work WITHOUT a service-role key.
+-- Participant rows are removed automatically by the ON DELETE CASCADE foreign key
+-- in supabase-schema-fixes.sql. (No UPDATE policy — events stay immutable.)
+drop policy if exists "events_delete_admin" on events;
+create policy "events_delete_admin" on events
+  for delete using (auth.uid() = '2058520b-09cb-4311-999a-d97e971d22b1');
 
 -- ---------------- NOTIFICATIONS ----------------
 -- System notifications (e.g. "admin removed your post"). Created if missing so

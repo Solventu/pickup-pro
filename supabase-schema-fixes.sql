@@ -53,3 +53,13 @@ alter table athlete_posts add column if not exists longitude double precision;
 -- ========================================================================
 create unique index if not exists profiles_username_lower_unique
   on profiles (lower(username));
+
+-- ========================================================================
+-- Cascade: deleting an event removes its participant rows automatically. This
+-- lets admin event-deletion work with just the admin's session (the
+-- events_delete_admin RLS policy) — no service-role key needed. Safe to re-run.
+-- Uses Postgres' default FK name (<table>_<column>_fkey); adjust if yours differs.
+-- ========================================================================
+alter table event_participants drop constraint if exists event_participants_event_id_fkey;
+alter table event_participants add  constraint event_participants_event_id_fkey
+  foreign key (event_id) references events(id) on delete cascade;

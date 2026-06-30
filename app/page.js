@@ -280,8 +280,8 @@ export default function HomePage() {
 
       {/* ---------- Map (hidden until toggled) ---------- */}
       <section ref={mapSectionRef} className="scroll-mt-20">
-        <div className="flex items-center justify-between gap-3">
-          <SectionLabel>Live map</SectionLabel>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <SectionLabel className="">Live map</SectionLabel>
           <button
             onClick={() => setShowMap((v) => !v)}
             aria-expanded={showMap}
@@ -325,7 +325,9 @@ export default function HomePage() {
       </section>
 
       {/* ---------- Controls ---------- */}
-      <section className="mt-10">
+      {/* mt matches the hero's bottom padding (py-6 sm:py-8) so the gap below
+          "Live map" equals the gap above it. */}
+      <section className="mt-6 sm:mt-8">
         <div className="relative">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
             <Search size={16} aria-hidden />
@@ -339,17 +341,19 @@ export default function HomePage() {
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
-          <div className="flex flex-wrap gap-2">
+          {/* Sports: a single draggable row — scroll/drag left↔right to reach any
+              sport. New entries in SPORTS just extend the bar. */}
+          <DragScroll>
             {SPORT_FILTERS.map((s) => (
               <button
                 key={s}
                 onClick={() => setSport(s)}
-                className={`pill ${sport === s ? "pill-active" : ""}`}
+                className={`pill shrink-0 ${sport === s ? "pill-active" : ""}`}
               >
                 {s}
               </button>
             ))}
-          </div>
+          </DragScroll>
           <div className="flex flex-wrap gap-2">
             {TYPE_FILTERS.map((t) => (
               <button
@@ -460,16 +464,120 @@ export default function HomePage() {
   );
 }
 
+// Horizontally scrollable filter row. Scrolls natively on touch; on desktop you
+// can click-and-drag the row left↔right to reach off-screen pills, or drag the
+// always-visible bar underneath. A drag is suppressed from firing a pill's click
+// so you don't accidentally select while scrolling.
+function DragScroll({ children }) {
+  const ref = useRef(null);
+  const drag = useRef({ down: false, startX: 0, scroll: 0, moved: false });
+  const [thumb, setThumb] = useState({ width: 0, left: 0, show: false });
+
+  // Size + position the custom bar from the row's scroll metrics.
+  const updateThumb = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollWidth, clientWidth, scrollLeft } = el;
+    const show = scrollWidth > clientWidth + 1;
+    setThumb({
+      show,
+      width: show ? (clientWidth / scrollWidth) * 100 : 100,
+      left: show ? (scrollLeft / scrollWidth) * 100 : 0,
+    });
+  }, []);
+
+  useEffect(() => {
+    updateThumb();
+    const el = ref.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateThumb, { passive: true });
+    window.addEventListener("resize", updateThumb);
+    return () => {
+      el.removeEventListener("scroll", updateThumb);
+      window.removeEventListener("resize", updateThumb);
+    };
+  }, [updateThumb]);
+
+  // Drag the pill row itself.
+  const onDown = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    drag.current = { down: true, startX: e.pageX, scroll: el.scrollLeft, moved: false };
+  };
+  const onMove = (e) => {
+    const el = ref.current;
+    if (!el || !drag.current.down) return;
+    const dx = e.pageX - drag.current.startX;
+    if (Math.abs(dx) > 4) drag.current.moved = true;
+    el.scrollLeft = drag.current.scroll - dx;
+  };
+  const stop = () => {
+    drag.current.down = false;
+  };
+  // Swallow the click that fires right after a drag so it doesn't select a pill.
+  const onClickCapture = (e) => {
+    if (drag.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      drag.current.moved = false;
+    }
+  };
+
+  // Drag the bar's thumb — maps pointer movement onto scrollLeft.
+  const onThumbDown = (e) => {
+    e.preventDefault();
+    const el = ref.current;
+    if (!el) return;
+    const startX = e.pageX;
+    const startScroll = el.scrollLeft;
+    const ratio = el.scrollWidth / el.clientWidth;
+    const onMoveWin = (ev) => {
+      el.scrollLeft = startScroll + (ev.pageX - startX) * ratio;
+    };
+    const onUpWin = () => {
+      window.removeEventListener("mousemove", onMoveWin);
+      window.removeEventListener("mouseup", onUpWin);
+    };
+    window.addEventListener("mousemove", onMoveWin);
+    window.addEventListener("mouseup", onUpWin);
+  };
+
+  return (
+    <div>
+      <div
+        ref={ref}
+        onMouseDown={onDown}
+        onMouseMove={onMove}
+        onMouseUp={stop}
+        onMouseLeave={stop}
+        onClickCapture={onClickCapture}
+        className="filter-scroll flex cursor-grab gap-2 overflow-x-auto py-1 active:cursor-grabbing"
+      >
+        {children}
+      </div>
+      {thumb.show && (
+        <div className="relative mt-2 h-1.5 w-full rounded-full bg-line/70">
+          <div
+            onMouseDown={onThumbDown}
+            className="absolute top-0 h-full cursor-grab rounded-full bg-accent/60 transition-colors hover:bg-accent active:cursor-grabbing"
+            style={{ width: `${thumb.width}%`, left: `${thumb.left}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Small mono eyebrow that labels a section with a short accent rule — gives the
 // page editorial rhythm instead of stacked unlabelled blocks. Fades in on scroll.
-function SectionLabel({ children }) {
+function SectionLabel({ children, className = "mb-3" }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="mono mb-3 flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] text-muted"
+      className={`mono flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] text-muted ${className}`}
     >
       <span className="h-px w-7 bg-accent/70" aria-hidden />
       {children}

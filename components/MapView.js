@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { Plus, Minus } from "lucide-react";
 import { MAP } from "@/lib/constants";
 import { formatTime, hasValidCoords } from "@/lib/helpers";
 
@@ -73,11 +74,10 @@ export default function MapView({ events = [], flyToRef, className = "" }) {
       // Default to a world view; the markers effect fits bounds to real events.
       center: [10, 25],
       zoom: 1.3,
+      // Drop Mapbox's default chrome (logo, attribution, nav control). We render
+      // our own zoom buttons below to match the site's design.
+      attributionControl: false,
     });
-    map.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
-      "top-right"
-    );
     mapRef.current = map;
 
     // Blend the base map into the warm navy theme: land takes the page bg, water
@@ -109,7 +109,14 @@ export default function MapView({ events = [], flyToRef, className = "" }) {
       };
     }
 
+    // Keep the canvas matched to the container. The map can mount before the
+    // container has reached its final height (e.g. inside the reveal/toggle),
+    // which otherwise leaves an unpainted strip at the bottom.
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
       markersRef.current = {};
@@ -160,5 +167,31 @@ export default function MapView({ events = [], flyToRef, className = "" }) {
     }
   }, [events]);
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <div className="relative">
+      <div ref={containerRef} className={className} />
+
+      {/* Custom zoom controls — styled to match the site instead of Mapbox's
+          default white +/- buttons. */}
+      <div className="absolute right-3 top-3 z-10 flex flex-col overflow-hidden rounded-lg border border-line bg-bg/80 backdrop-blur-md shadow-lg">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => mapRef.current?.zoomIn()}
+          className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-accent/15 hover:text-accent"
+        >
+          <Plus size={16} aria-hidden />
+        </button>
+        <span className="h-px w-full bg-line" aria-hidden />
+        <button
+          type="button"
+          aria-label="Zoom out"
+          onClick={() => mapRef.current?.zoomOut()}
+          className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-accent/15 hover:text-accent"
+        >
+          <Minus size={16} aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
 }

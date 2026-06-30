@@ -2,21 +2,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, ImageIcon } from "lucide-react";
+import { X, ImageIcon, MapPin } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { SPORTS, POST_IMAGES_BUCKET } from "@/lib/constants";
 import { validateImageFile, randomImageName } from "@/lib/upload";
 import { cleanText, LIMITS } from "@/lib/sanitize";
 import Avatar from "./Avatar";
 import ImageCropModal from "./ImageCropModal";
+import LocationPicker from "./LocationPicker";
 
 const MAX_CHARS = LIMITS.post;
+const MAX_LOCATION = LIMITS.location;
 
 export default function PostComposer({ currentUser, profile, onCreated }) {
   const [text, setText] = useState("");
   const [sport, setSport] = useState("");
   const [eventId, setEventId] = useState("");
   const [events, setEvents] = useState([]);
+  const [showLocation, setShowLocation] = useState(false);
+  const [location, setLocation] = useState(""); // human-readable place label
+  const [coords, setCoords] = useState(null); // { lng, lat } from the pin
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [cropSrc, setCropSrc] = useState(""); // original image while cropping
@@ -143,6 +148,9 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           sport: sport || null,
           event_id: eventId || null,
           image_url,
+          location: cleanText(location, LIMITS.location) || null,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
         })
         .select()
         .single();
@@ -151,6 +159,9 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
       setText("");
       setSport("");
       setEventId("");
+      setLocation("");
+      setCoords(null);
+      setShowLocation(false);
       clearFile();
       onCreated?.(data);
     } catch (err) {
@@ -197,6 +208,40 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
         </div>
       )}
 
+      {/* Location: a place label others can read + an optional pin they can open
+          on a map. Toggled so the composer stays compact by default. */}
+      {showLocation && (
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-bg/40 p-2.5">
+          <div className="flex items-center gap-2">
+            <MapPin size={14} className="shrink-0 text-accent" aria-hidden />
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value.slice(0, MAX_LOCATION))}
+              placeholder="Place name (e.g. Central Park Court)"
+              className="field-input flex-1 py-1.5 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setShowLocation(false);
+                setLocation("");
+                setCoords(null);
+              }}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:text-fg"
+              aria-label="Remove location"
+            >
+              <X size={15} aria-hidden />
+            </button>
+          </div>
+          <LocationPicker value={coords} onChange={setCoords} />
+          <p className="mono text-[0.7rem] text-muted">
+            {coords
+              ? "Pin set — others can open it on the map."
+              : "Tap the map to drop a pin (optional)."}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -204,6 +249,15 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           className="btn btn-muted px-2 py-1 text-xs"
         >
           <ImageIcon size={14} aria-hidden /> Photo
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowLocation((v) => !v)}
+          className={`btn px-2 py-1 text-xs ${
+            showLocation || location || coords ? "btn-primary" : "btn-muted"
+          }`}
+        >
+          <MapPin size={14} aria-hidden /> Location
         </button>
         <input
           ref={fileRef}

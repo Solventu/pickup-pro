@@ -439,6 +439,17 @@
   }
 }
 
+/* ---------- draggable filter row ---------- */
+/* Native scrollbar is hidden; the row uses a custom always-visible bar (see the
+   DragScroll component) so it's draggable and never auto-hides. */
+.filter-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ---------- mobile input zoom fix ----------
    iOS Safari auto-zooms when a focused input/textarea/select has a font-size
    below 16px. Our .field-* classes use ~14px, so tapping any field zoomed the
@@ -449,6 +460,16 @@
   select {
     font-size: 16px !important;
   }
+}
+
+/* ---------- Mapbox chrome ---------- */
+/* Hide the default logo + attribution; the map uses our own zoom control. The
+   logo is injected automatically and can only be removed via CSS. */
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib,
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  display: none !important;
 }
 
 /* ---------- Mapbox dark popup overrides ---------- */

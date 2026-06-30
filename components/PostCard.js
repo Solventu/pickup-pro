@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, MoreHorizontal } from "lucide-react";
+import { Calendar, MoreHorizontal, MapPin } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 import { timeAgo } from "@/lib/helpers";
@@ -12,6 +12,7 @@ import Avatar from "./Avatar";
 import CommentThread from "./CommentThread";
 import AdminDeletePost from "./AdminDeletePost";
 import Modal from "./Modal";
+import LikesModal from "./LikesModal";
 
 function HeartIcon({ filled }) {
   return (
@@ -63,7 +64,9 @@ export default function PostCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [likesOpen, setLikesOpen] = useState(false);
   const menuRef = useRef(null);
+  const followedLikers = post.liked_by_followed || [];
 
   const { isAdmin } = useAuth();
   const author = post.author || {};
@@ -217,6 +220,28 @@ export default function PostCard({
         </div>
       )}
 
+      {/* Location — opens the pin (or place name) on Google Maps so anyone can
+          find it. Coordinates are used when the author dropped a pin. */}
+      {(post.location || (post.latitude != null && post.longitude != null)) && (
+        <a
+          href={
+            post.latitude != null && post.longitude != null
+              ? `https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  post.location
+                )}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 flex w-fit items-center gap-1.5 text-xs text-muted transition-colors hover:text-accent"
+        >
+          <MapPin size={12} aria-hidden />
+          <span className="underline-offset-2 hover:underline">
+            {post.location || "View location on map"}
+          </span>
+        </a>
+      )}
+
       {/* Event tag */}
       {post.event && (
         <Link
@@ -229,16 +254,30 @@ export default function PostCard({
 
       {/* Actions — compact, flush left */}
       <div className="mt-2 flex items-center gap-4 border-t border-line pt-2">
-        <button
-          onClick={toggleLike}
-          disabled={likeBusy}
-          className={`flex items-center gap-1 transition-colors ${
-            liked ? "text-accent" : "text-muted hover:text-fg"
-          }`}
-        >
-          <HeartIcon filled={liked} />
-          <span className="mono text-xs">{likeCount}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleLike}
+            disabled={likeBusy}
+            aria-label={liked ? "Unlike" : "Like"}
+            className={`transition-colors ${
+              liked ? "text-accent" : "text-muted hover:text-fg"
+            }`}
+          >
+            <HeartIcon filled={liked} />
+          </button>
+          {/* The count opens the full list of who liked. */}
+          <button
+            onClick={() => likeCount > 0 && setLikesOpen(true)}
+            disabled={likeCount === 0}
+            className={`mono text-xs ${
+              likeCount > 0
+                ? "text-muted hover:text-fg hover:underline"
+                : "text-muted"
+            }`}
+          >
+            {likeCount}
+          </button>
+        </div>
         <button
           onClick={() => setShowComments((s) => !s)}
           className={`flex items-center gap-1 transition-colors ${
@@ -249,6 +288,37 @@ export default function PostCard({
           <span className="mono text-xs">{commentCount}</span>
         </button>
       </div>
+
+      {/* "Liked by" — accounts you follow who liked this post. */}
+      {followedLikers.length > 0 && (
+        <p className="mt-1.5 text-xs text-muted">
+          Liked by{" "}
+          {followedLikers.slice(0, 2).map((u, i) => (
+            <span key={u.id}>
+              {i > 0 && ", "}
+              <Link
+                href={`/athletes/${u.id}`}
+                className="font-medium text-fg hover:text-accent"
+              >
+                @{u.username || "user"}
+              </Link>
+            </span>
+          ))}
+          {followedLikers.length > 2 && (
+            <>
+              {" "}
+              and{" "}
+              <button
+                onClick={() => setLikesOpen(true)}
+                className="font-medium text-fg hover:text-accent"
+              >
+                {followedLikers.length - 2} other
+                {followedLikers.length - 2 === 1 ? "" : "s"}
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       {showComments && (
         <CommentThread
@@ -289,6 +359,13 @@ export default function PostCard({
           </button>
         </div>
       </Modal>
+
+      {/* Who liked this post */}
+      <LikesModal
+        open={likesOpen}
+        postId={post.id}
+        onClose={() => setLikesOpen(false)}
+      />
     </article>
   );
 }

@@ -15,6 +15,7 @@ import EditProfileModal from "@/components/EditProfileModal";
 import PostModal from "@/components/PostModal";
 import FollowListModal from "@/components/FollowListModal";
 import AdminDeletePost from "@/components/AdminDeletePost";
+import ImageLightbox from "@/components/ImageLightbox";
 
 export default function ProfilePage() {
   const params = useParams();
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [activePost, setActivePost] = useState(null);
   const [followModal, setFollowModal] = useState(null); // "followers" | "following"
+  const [avatarOpen, setAvatarOpen] = useState(false); // profile-photo lightbox
 
   const isOwner = !!user && user.id === id;
 
@@ -223,12 +225,28 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       {/* Header */}
       <Reveal className="card relative flex flex-col gap-5 overflow-hidden p-6 sm:flex-row sm:items-center">
-        <Avatar
-          username={profile.username}
-          avatarUrl={profile.avatar_url}
-          size={88}
-          ring
-        />
+        {profile.avatar_url ? (
+          <button
+            type="button"
+            onClick={() => setAvatarOpen(true)}
+            aria-label="View profile photo"
+            className="w-fit cursor-zoom-in rounded-full"
+          >
+            <Avatar
+              username={profile.username}
+              avatarUrl={profile.avatar_url}
+              size={88}
+              ring
+            />
+          </button>
+        ) : (
+          <Avatar
+            username={profile.username}
+            avatarUrl={profile.avatar_url}
+            size={88}
+            ring
+          />
+        )}
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">
@@ -386,6 +404,13 @@ export default function ProfilePage() {
         onClose={() => setEditOpen(false)}
         profile={profile}
         onSaved={handleSaved}
+      />
+
+      <ImageLightbox
+        open={avatarOpen}
+        src={profile.avatar_url}
+        alt={`@${profile.username || "user"} profile photo`}
+        onClose={() => setAvatarOpen(false)}
       />
     </div>
   );

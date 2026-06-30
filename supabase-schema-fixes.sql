@@ -28,3 +28,13 @@ alter table post_likes    add  constraint post_likes_post_id_fkey
 alter table post_comments drop constraint if exists post_comments_post_id_fkey;
 alter table post_comments add  constraint post_comments_post_id_fkey
   foreign key (post_id) references athlete_posts(id) on delete cascade;
+
+-- ========================================================================
+-- Optional location on a post. `location` is the human-readable place label
+-- the author types; latitude/longitude are set when they drop a pin so other
+-- users can open it on a map. All nullable — posts without a location are fine.
+-- Safe to re-run.
+-- ========================================================================
+alter table athlete_posts add column if not exists location  text;
+alter table athlete_posts add column if not exists latitude  double precision;
+alter table athlete_posts add column if not exists longitude double precision;

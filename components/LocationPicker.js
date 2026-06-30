@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { Plus, Minus } from "lucide-react";
 import { MAP } from "@/lib/constants";
 
 // Click-to-pick location map for the event form. Clicking (or dragging the pin)
@@ -47,8 +48,22 @@ export default function LocationPicker({ value, onChange }) {
       center: value ? [value.lng, value.lat] : [MAP.lng, MAP.lat],
       zoom: value ? 14 : 11,
     });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+
+    // Match the homepage map: land takes the page bg, water a touch lighter, so
+    // the picker reads as part of the site instead of a stock-grey Mapbox map.
+    map.on("style.load", () => {
+      const set = (id, prop, val) => {
+        try {
+          if (map.getLayer(id)) map.setPaintProperty(id, prop, val);
+        } catch {}
+      };
+      (map.getStyle().layers || []).forEach((l) => {
+        if (l.type === "background") set(l.id, "background-color", "#1a1b26");
+        else if (l.type === "fill" && /water|ocean|bathymetry/i.test(l.id))
+          set(l.id, "fill-color", "#262838");
+      });
+    });
 
     if (value) placeMarker(map, [value.lng, value.lat]);
 
@@ -75,10 +90,34 @@ export default function LocationPicker({ value, onChange }) {
   }, [value?.lng, value?.lat]);
 
   return (
-    <div
-      ref={containerRef}
-      data-lenis-prevent
-      className="h-64 w-full overflow-hidden rounded-xl border border-line"
-    />
+    <div className="relative">
+      <div
+        ref={containerRef}
+        data-lenis-prevent
+        className="h-64 w-full overflow-hidden rounded-xl border border-line"
+      />
+
+      {/* Custom zoom controls — same look as the homepage map (green-on-hover),
+          instead of Mapbox's default white +/- buttons. */}
+      <div className="absolute right-3 top-3 z-10 flex flex-col overflow-hidden rounded-lg border border-line bg-bg/80 backdrop-blur-md shadow-lg">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => mapRef.current?.zoomIn()}
+          className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-accent/15 hover:text-accent"
+        >
+          <Plus size={16} aria-hidden />
+        </button>
+        <span className="h-px w-full bg-line" aria-hidden />
+        <button
+          type="button"
+          aria-label="Zoom out"
+          onClick={() => mapRef.current?.zoomOut()}
+          className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:bg-accent/15 hover:text-accent"
+        >
+          <Minus size={16} aria-hidden />
+        </button>
+      </div>
+    </div>
   );
 }

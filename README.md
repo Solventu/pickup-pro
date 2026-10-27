@@ -24,7 +24,7 @@ Live demo: [pickup-pro-one.vercel.app](https://pickup-pro-one.vercel.app)
 | Backend | [Supabase](https://supabase.com) – auth, Postgres with Row Level Security, storage, realtime |
 | Maps | [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js/) |
 | AI | [Anthropic API](https://docs.claude.com) (Claude) |
-| Hosting | Vercel or Cloudflare Pages |
+| Hosting | [Vercel](https://vercel.com) |
 
 ## Getting started
 
@@ -54,7 +54,7 @@ Copy `.env.example` to `.env.local` and fill in the values:
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only (admin actions, saving posts) | **Yes** |
 | `ADMIN_UID` | Server only – the Supabase user id of the admin | Keep private |
 
-Never commit `.env.local` (it is already in `.gitignore`) and never prefix a secret with `NEXT_PUBLIC_`.
+Set the same variables in your Vercel project settings for production. Never commit `.env.local` (it is already in `.gitignore`) and never prefix a secret with `NEXT_PUBLIC_`.
 
 ### 4. Database
 
@@ -83,8 +83,6 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run build` | Production build |
 | `npm run start` | Run the production build |
 | `npm run lint` | Lint with ESLint |
-| `npm run pages:build` | Build for Cloudflare Pages |
-| `npm run preview` | Build and preview locally with Wrangler |
 
 ## Project structure
 

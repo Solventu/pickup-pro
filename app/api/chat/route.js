@@ -85,6 +85,11 @@ function eventForModel(e) {
 
 const RATE_LIMIT_MSG = "Too many requests. Please try again in a minute.";
 
+// Input caps — keep a single request from sending huge prompts (cost abuse).
+const MAX_MESSAGE_CHARS = 500;
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_CHARS = 2000;
+
 export async function POST(req) {
   // Rate limit before doing any work.
   if (!checkRateLimit("chat", getClientIp(req), { max: 10, windowMs: 60_000 })) {
@@ -95,6 +100,11 @@ export async function POST(req) {
   const { user } = await verifyUser(req);
   if (!user) {
     return Response.json({ error: "Unauthorized", reply: ERROR_REPLY }, { status: 401 });
+  }
+
+  // Also limit per account, so rotating IPs doesn't bypass the quota.
+  if (!checkRateLimit("chat-user", user.id, { max: 20, windowMs: 60_000 })) {
+    return Response.json({ reply: RATE_LIMIT_MSG }, { status: 429 });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -117,6 +127,12 @@ export async function POST(req) {
   if (!message) {
     return Response.json({ reply: ERROR_REPLY }, { status: 400 });
   }
+  if (message.length > MAX_MESSAGE_CHARS) {
+    return Response.json(
+      { reply: `Please keep your message under ${MAX_MESSAGE_CHARS} characters.` },
+      { status: 400 }
+    );
+  }
 
   // Load events on their own — a Supabase failure must not take down the whole
   // chat. If it fails we continue with no event context rather than 500.
@@ -134,8 +150,11 @@ export async function POST(req) {
     // Keep the last 10 turns of context; only forward valid roles + content.
     const priorMessages = history
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
-      .slice(-10)
-      .map((m) => ({ role: m.role, content: String(m.content) }));
+      .slice(-MAX_HISTORY_TURNS)
+      .map((m) => ({
+        role: m.role,
+        content: String(m.content).slice(0, MAX_HISTORY_CHARS),
+      }));
 
     const system = `${SYSTEM_PROMPT}
 

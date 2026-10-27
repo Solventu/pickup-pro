@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Minus, X } from "lucide-react";
-import { formatDate, formatTime } from "@/lib/helpers";
+import { formatDate, formatTime, safeExternalUrl } from "@/lib/helpers";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthProvider";
 
@@ -74,9 +74,9 @@ function EventMiniCard({ event, onFlyTo }) {
         <button onClick={() => onFlyTo(event)} className="btn btn-outline text-xs">
           See on map
         </button>
-        {event.source_url && (
+        {safeExternalUrl(event.source_url) && (
           <a
-            href={event.source_url}
+            href={safeExternalUrl(event.source_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-muted text-xs"
@@ -274,6 +274,7 @@ export default function EventChatbot() {
           {/* Composer */}
           <form onSubmit={send} className="flex items-center gap-2 border-t border-line p-3">
             <input
+              maxLength={500}
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}

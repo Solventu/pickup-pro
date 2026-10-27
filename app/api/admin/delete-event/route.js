@@ -43,7 +43,7 @@ export async function POST(req) {
   const { error } = await db.from("events").delete().eq("id", eventId);
   if (error) {
     console.error("Admin delete-event failed:", eventId, error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "Delete failed." }, { status: 500 });
   }
 
   console.log("Admin deleted event:", eventId, "by:", user.id);

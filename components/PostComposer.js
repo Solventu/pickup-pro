@@ -103,40 +103,13 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
     }
     setError("");
 
-    // 1) AI moderation of the text (image-only posts skip it). Fails OPEN: any
-    // API/parse error lets the post through so we never block legit content.
-    if (description) {
-      setPhase("checking");
-      try {
-        const { data: sess } = await supabase.auth.getSession();
-        const token = sess.session?.access_token;
-        const res = await fetch("/api/moderate-post", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ content: description, sport: sport || "" }),
-        });
-        const verdict = await res.json().catch(() => ({ allowed: true }));
-        if (verdict && verdict.allowed === false) {
-          setError(
-            `Your post couldn't be published: ${
-              verdict.reason || "content not allowed."
-            }`
-          );
-          setPhase("idle");
-          return;
-        }
-      } catch {
-        // fail open — continue to save
-      }
-    }
-
-    // 2) Save the post.
-    setPhase("posting");
+    // The server checks the text with AI moderation, validates every field and
+    // saves the post (/api/posts). The browser no longer writes posts directly,
+    // so moderation can't be skipped.
+    setPhase(description ? "checking" : "posting");
+    let uploadedPath = null;
     try {
-      let image_url = null;
+      let imageUrl = null;
       if (file) {
         // Random UUID filename; extension from the validated MIME type only.
         const path = `${currentUser.id}/${randomImageName(file)}`;
@@ -144,27 +117,37 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
           .from(POST_IMAGES_BUCKET)
           .upload(path, file, { cacheControl: "3600", upsert: false });
         if (upErr) throw upErr;
+        uploadedPath = path;
         const { data: pub } = supabase.storage
           .from(POST_IMAGES_BUCKET)
           .getPublicUrl(path);
-        image_url = pub.publicUrl;
+        imageUrl = pub.publicUrl;
       }
 
-      const { data, error: insErr } = await supabase
-        .from("athlete_posts")
-        .insert({
-          user_id: currentUser.id,
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
           description,
           sport: sport || null,
-          event_id: eventId || null,
-          image_url,
+          eventId: eventId || null,
+          imageUrl,
           location: cleanText(location, LIMITS.location) || null,
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
-        })
-        .select()
-        .single();
-      if (insErr) throw insErr;
+        }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || "Could not create post.");
+      }
+      const data = result.post;
+      uploadedPath = null; // saved — keep the image
 
       setText("");
       setSport("");
@@ -175,6 +158,10 @@ export default function PostComposer({ currentUser, profile, onCreated }) {
       clearFile();
       onCreated?.(data);
     } catch (err) {
+      // Don't leave an orphaned image behind when the post was rejected.
+      if (uploadedPath) {
+        supabase.storage.from(POST_IMAGES_BUCKET).remove([uploadedPath]).catch(() => {});
+      }
       setError(err.message || "Could not create post.");
     } finally {
       setPhase("idle");

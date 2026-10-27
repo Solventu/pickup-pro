@@ -18,6 +18,9 @@ const nextConfig = {
     unoptimized: true,
   },
 
+  // Don't advertise the framework in every response.
+  poweredByHeader: false,
+
   // Baseline security headers applied to every response.
   async headers() {
     return [
@@ -38,8 +41,20 @@ const nextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
-          // Legacy XSS filter (modern browsers ignore it, but harmless).
-          { key: "X-XSS-Protection", value: "1; mode=block" },
+          // Force HTTPS for two years, including subdomains.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // Isolate the page from cross-origin windows it opens.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          // Block plugins, <base> hijacking and framing. A full script/style CSP
+          // is not set here because Mapbox and Next.js inline scripts need a
+          // carefully tested policy.
+          {
+            key: "Content-Security-Policy",
+            value: "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+          },
         ],
       },
     ];

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, ExternalLink, Trash2 } from "lucide-react";
-import { formatDate, formatTime, hasValidCoords } from "@/lib/helpers";
+import { formatDate, formatTime, hasValidCoords, safeExternalUrl } from "@/lib/helpers";
 import { deleteEventAsAdmin } from "@/lib/events";
 import ProgressBar from "./ProgressBar";
 import EventParticipantsModal from "./EventParticipantsModal";
@@ -42,10 +42,11 @@ export default function EventCard({
 
   const renderActionButton = () => {
     // Official events with an external registration link
-    if (isOfficial && event.source_url) {
+    const registerUrl = safeExternalUrl(event.source_url);
+    if (isOfficial && registerUrl) {
       return (
         <a
-          href={event.source_url}
+          href={registerUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="btn btn-primary flex-1"

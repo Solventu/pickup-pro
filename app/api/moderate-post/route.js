@@ -1,129 +1,43 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { verifyUser } from "@/lib/supabaseServer";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { moderateText, MAX_MODERATED_CHARS } from "@/lib/moderation";
 
 // Uses the Anthropic API. Never cached.
 export const dynamic = "force-dynamic";
 
-const MODEL = "claude-sonnet-4-6";
-
-const SYSTEM_PROMPT = `You are a content moderator for PickupPro, a worldwide sports platform. Analyze the following post and determine if it should be allowed or rejected.
-
-REJECT the post if it contains:
-- Profanity or insults in ANY language (Romanian, English, etc.)
-- Hate speech, racism, discrimination
-- Content completely unrelated to sports, fitness, or physical activity
-- Spam or promotional content unrelated to sports events
-- Threats or harassment
-
-ALLOW the post if it:
-- Is about sports, fitness, running, games, competitions
-- Shares achievements, results, or sports moments
-- Discusses sports events even casually
-- Is a general greeting or community message related to sports
-
-Respond with ONLY a JSON object:
-{
-  'allowed': true/false,
-  'reason': 'brief explanation in English if rejected'
-}`;
-
-// Tolerant parser: the model is asked for JSON but the example uses single
-// quotes, so we accept single-quoted objects and fall back to regex. Anything
-// we can't read as an explicit rejection is treated as ALLOWED (fail open).
-function parseVerdict(raw) {
-  const tryParse = (txt) => {
-    try {
-      return JSON.parse(txt);
-    } catch {
-      return null;
-    }
-  };
-
-  const match = raw && raw.match(/\{[\s\S]*\}/);
-  if (match) {
-    const obj = tryParse(match[0]) || tryParse(match[0].replace(/'/g, '"'));
-    if (obj && typeof obj.allowed === "boolean") {
-      return {
-        allowed: obj.allowed,
-        reason: typeof obj.reason === "string" ? obj.reason : "",
-      };
-    }
-  }
-
-  const allowedMatch = raw && raw.match(/allowed["']?\s*:\s*(true|false)/i);
-  if (allowedMatch) {
-    const allowed = allowedMatch[1].toLowerCase() === "true";
-    const reasonMatch = raw.match(/reason["']?\s*:\s*["']([^"']*)["']/i);
-    return { allowed, reason: reasonMatch ? reasonMatch[1] : "" };
-  }
-
-  return { allowed: true, reason: "" }; // fail open
-}
-
 // POST /api/moderate-post  body: { content, sport }
-// Returns { allowed: boolean, reason: string }. ALWAYS fails open (allowed:true)
-// on any error so API hiccups never block legitimate posts.
+// Returns { allowed: boolean, reason: string }. A quick pre-check for the UI;
+// the authoritative check runs again inside /api/posts when the post is saved.
 export async function POST(req) {
-  // Only logged-in users can reach the (paid) moderation endpoint. Posting UI is
-  // already gated to authenticated users; this stops anonymous abuse of the API.
+  // Only logged-in users can reach the (paid) moderation endpoint.
   const { user } = await verifyUser(req);
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Throttle per IP so a logged-in user can't spam the endpoint and burn API
-  // credits. Over-quota requests block the post (allowed:false) rather than fail
-  // open, so the rate limit can't be used to slip past moderation.
-  if (!checkRateLimit("moderate-post", getClientIp(req), { max: 10, windowMs: 60_000 })) {
+  // Throttle per IP and per account so nobody can burn API credits.
+  if (
+    !checkRateLimit("moderate-post", getClientIp(req), { max: 10, windowMs: 60_000 }) ||
+    !checkRateLimit("moderate-post-user", user.id, { max: 10, windowMs: 60_000 })
+  ) {
     return Response.json(
       { allowed: false, reason: "You're posting too fast. Please wait a moment." },
       { status: 429 }
     );
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("moderate-post: missing ANTHROPIC_API_KEY, failing open");
-    return Response.json({ allowed: true, reason: "" });
-  }
-
   let body;
   try {
     body = await req.json();
   } catch {
-    return Response.json({ allowed: true, reason: "" });
+    return Response.json({ allowed: false, reason: "Invalid request." }, { status: 400 });
   }
 
   const content = typeof body?.content === "string" ? body.content.trim() : "";
   const sport = typeof body?.sport === "string" ? body.sport.trim() : "";
-
-  // Nothing textual to moderate (e.g. image-only post) → allow.
-  if (!content) {
-    return Response.json({ allowed: true, reason: "" });
+  if (content.length > MAX_MODERATED_CHARS) {
+    return Response.json({ allowed: false, reason: "Post is too long." }, { status: 400 });
   }
 
-  try {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 200,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Sport tag: ${sport || "(none)"}\n\nPost content:\n${content}`,
-        },
-      ],
-    });
-
-    const raw = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
-
-    return Response.json(parseVerdict(raw));
-  } catch (error) {
-    console.error("moderate-post error (failing open):", error?.message || error);
-    return Response.json({ allowed: true, reason: "" });
-  }
+  return Response.json(await moderateText(content, sport));
 }

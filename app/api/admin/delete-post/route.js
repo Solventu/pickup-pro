@@ -48,7 +48,7 @@ export async function POST(req) {
   const { error } = await db.from("athlete_posts").delete().eq("id", postId);
   if (error) {
     console.error("Admin delete-post failed:", postId, error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "Delete failed." }, { status: 500 });
   }
 
   // Best-effort: tell the author their post was removed. Don't fail the delete
